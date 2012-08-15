@@ -7,16 +7,98 @@ import (
 	"strconv"
 	"log"
 	"strings"
+	"fmt"
 )
 
 type Message struct {
-	Facility int64
-	Severity int64
+	Facility Facility 
+	Severity Severity 
 	TimeStamp string
 	Hostname string
 	Tag string
 	Content string
 }
+
+type Facility int64
+const (
+	KERNEL Facility  = iota
+	USER
+	MAIL
+	SYSTEM
+	AUTH
+	SYSLOG
+	LPD
+	NNTP
+	UUCP
+	CLOCK
+	SECURITY
+	FTP
+	NTP
+	CLOCK2
+	LOCAL1
+	LOCAL2
+	LOCAL3
+	LOCAL4
+	LOCAL5
+	LOCAL6
+	LOCAL7
+)
+
+func (facility* Facility)  String () string {
+	switch *facility {
+		case KERNEL: { return "KERNEL"; }
+		case USER: { return "USER"; }
+		case MAIL: { return "MAIL"; }
+		case SYSTEM: { return  "SYSTEM"; }
+		case AUTH: { return "AUTH"; }
+		case SYSLOG: { return "SYSLOG"; }
+		case LPD: { return "LDP"; }
+		case NNTP: { return "NNTP"; }
+		case UUCP: { return "UUCP"; }
+		case CLOCK: { return "CLOCK"; }
+		case SECURITY:{ return "SECURITY"; }
+		case FTP:{ return "FTP"; } 
+		case NTP:{ return "NTP"; } 
+		case CLOCK2:{ return "CLOCK2"; }
+		case LOCAL1:{ return "LOCAL1"; }
+		case LOCAL2:{ return "LOCAL2"; }
+		case LOCAL3:{ return "LOCAL3"; }
+		case LOCAL4:{ return "LOCAL4"; }
+		case LOCAL5:{ return "LOCAL5"; }
+		case LOCAL6:{ return "LOCAL6"; }
+		case LOCAL7:{ return "LOCAL7"; }
+	}
+
+	return "nil";
+}
+type Severity int64
+
+const (
+	Emergency Severity = iota
+	Alert
+	Critical
+	Error
+	Warning
+	Notice
+	Information
+	Debug
+)
+
+func (severity* Severity)  String () string {
+	switch *severity {
+	case Emergency : { return "Emergency";}
+	case Alert : { return "Alert";}
+	case Critical : { return "Critical";}
+	case Error : { return "Error";}
+	case Warning : { return "Warning";}
+	case Notice : { return "Notice";}
+	case Information : { return "Information";}
+	case Debug : { return "Debug"; }
+	}
+
+	return "nil";
+}
+
 
 //var messageRegex = regexp.MustCompile(`^<(?P<facility>\d{1,2})(?P<severity>\d)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<hostname>\S+)\s(?P<tag>[^\[]+).*?:\s(?P<content>.*)`)
 
@@ -43,11 +125,13 @@ func New(packet string) (*Message, error) {
 		}
 		message := matches[5]
 
-		return &Message{ facility, severity, timestamp, hostname, tag, message}, nil
+		return &Message{ Facility(facility), Severity(severity), timestamp, hostname, tag, message}, nil
 	}
 	return &Message{}, errors.New("Message is not a valid RFC3164 packet")
 }
-
+func (message *Message) String() string {
+	return fmt.Sprintf("%s %s.%s %s %s:%s", message.TimeStamp, message.Facility, message.Severity, message.Hostname, message.Tag, message.Content)
+}
 func Process(finish <-chan bool, lines <-chan string, messages chan<- *Message) {
 	for {
 		select {

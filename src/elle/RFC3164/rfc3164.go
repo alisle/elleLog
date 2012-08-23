@@ -19,6 +19,9 @@ type Message struct {
 	Content string
 }
 
+type MessageWriter interface {
+	WriteMessage(msg Message)
+}
 type Facility int64
 const (
 	KERNEL Facility  = iota

@@ -44,7 +44,7 @@ const (
 	LOCAL7
 )
 
-func (facility* Facility)  String () string {
+func (facility* Facility)  String() string {
 	switch *facility {
 		case KERNEL: { return "KERNEL"; }
 		case USER: { return "USER"; }
@@ -84,7 +84,7 @@ const (
 	Debug
 )
 
-func (severity* Severity)  String () string {
+func (severity* Severity)  String() string {
 	switch *severity {
 	case Emergency : { return "Emergency";}
 	case Alert : { return "Alert";}
@@ -100,12 +100,9 @@ func (severity* Severity)  String () string {
 }
 
 
-//var messageRegex = regexp.MustCompile(`^<(?P<facility>\d{1,2})(?P<severity>\d)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<hostname>\S+)\s(?P<tag>[^\[]+).*?:\s(?P<content>.*)`)
-
-var messageRegex = regexp.MustCompile(`^<(?P<facility>\d{1,2})(?P<severity>\d)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<HostnameTag>[^:]+):(?P<message>.*)`)
+var messageRegex = regexp.MustCompile(`^<(?P<facility>\d{1,2})(?P<severity>\d)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<HostnameTag>[^(:|\[)]+).*?:(?P<message>.*)`)
 
 func New(packet string) (*Message, error) {
-	log.Print(packet)
 	if matches := messageRegex.FindStringSubmatch(packet); matches != nil {
 		var facility, severity int64
 		var hostname, tag string
@@ -130,8 +127,9 @@ func New(packet string) (*Message, error) {
 	return &Message{}, errors.New("Message is not a valid RFC3164 packet")
 }
 func (message *Message) String() string {
-	return fmt.Sprintf("%s %s.%s %s %s:%s", message.TimeStamp, message.Facility, message.Severity, message.Hostname, message.Tag, message.Content)
+	return fmt.Sprintf("%s %v.%v %s %s:%s", message.TimeStamp, message.Facility.String(), message.Severity.String(), message.Hostname, message.Tag, message.Content)
 }
+
 func Process(finish <-chan bool, lines <-chan string, messages chan<- *Message) {
 	for {
 		select {

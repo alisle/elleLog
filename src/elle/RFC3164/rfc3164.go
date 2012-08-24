@@ -22,6 +22,12 @@ type Message struct {
 type MessageWriter interface {
 	WriteMessage(msg Message)
 }
+
+var attachedWriters = make([]MessageWriter, 0, 500)
+func AttachWriter(writer MessageWriter) {
+	attachedWriters = append(attachedWriters, writer)
+}
+
 type Facility int64
 const (
 	KERNEL Facility  = iota
@@ -133,7 +139,23 @@ func (message *Message) String() string {
 	return fmt.Sprintf("%s %v.%v %s %s:%s", message.TimeStamp, message.Facility.String(), message.Severity.String(), message.Hostname, message.Tag, message.Content)
 }
 
-func Process(finish <-chan bool, lines <-chan string, messages chan<- *Message) {
+func Process(finish <- chan bool, lines <-chan string) {
+	messages := make(chan *Message, 1000)
+	defer func() {
+		close(messages)
+	}()
+
+	go grabMessages(finish, lines, messages)
+
+	for message := range messages {
+		for _, writer := range attachedWriters {
+			writer.WriteMessage(*message)
+		}
+
+		fmt.Println(message)
+	}
+}
+func grabMessages(finish <-chan bool, lines <-chan string, messages chan<- *Message) {
 	for {
 		select {
 		case <- finish:

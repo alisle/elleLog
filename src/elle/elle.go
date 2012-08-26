@@ -2,16 +2,16 @@ package ellelog
 
 import (
 	"log"
-	"elle/RFC3164"
-	"elle/Listener"
-	"elle/LogWriter"
+	"elle/rfc3164"
+	"elle/listener"
+	"elle/writers/logwriter"
 	"os"
 	"os/signal"
 )
 
 func Run() {
-	exit := false
-	finished := make(chan bool)
+	exit := make(chan bool)
+	finished := make(chan bool, 3)
 	lines := make(chan string, 1000)
 	messages := make(chan *RFC3164.Message, 1000)
 
@@ -36,18 +36,29 @@ func Run() {
 	catchSIGTERM := make(chan os.Signal, 1)
 	signal.Notify(catchSIGTERM, os.Interrupt)
 	go func() {
+
 		for _ = range catchSIGTERM {
-			if exit != true  {
-				log.Print("Caught Sigterm")
-				for x := 0; x < 3; x++ {
-					finished <- true
-				}
-				exit = true 
-			}
+			exit <- true
+			return
 		}
 	}()
 
-	LogWriter.Process(finished, messages)
+	for
+	{
+		select {
+			case message := <- messages:
+				LogWriter.Process(message)
+			case <- exit:
+				{
+					log.Print("Caught Sigterm")
+					for x := 0; x < 3; x++ {
+						finished <- true
+					}
+					return
+				}
+		}
+	}
+
 }
 
 

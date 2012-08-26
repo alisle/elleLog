@@ -1,9 +1,8 @@
 package LogWriter
 
 import ( 
-	"fmt"
 	"log"
-	"elle/RFC3164"
+	"elle/rfc3164"
 	"os"
 	"bufio"
 )
@@ -24,7 +23,8 @@ func (logWriter *LogWriter)WriteMessage(msg *RFC3164.Message) {
 }
 
 func (logWriter *LogWriter)WriteString(output string) {
-	logWriter.file.WriteString(output + "\n")
+	logWriter.writer.WriteString(output + "\n")
+	logWriter.writer.Flush()
 }
 
 func (logWriter *LogWriter)Close() {
@@ -36,15 +36,13 @@ var currentWriter = 0
 
 func New(fileName string) (*LogWriter, error) {
 	var logWriter *LogWriter
-//	file, err :=  os.OpenFile(fileName, os.O_APPEND | os.O_CREATE, 0666)
-	file, err := os.Create(fileName)
+	file, err :=  os.OpenFile(fileName, os.O_WRONLY | os.O_APPEND | os.O_CREATE, 0666)
 
 	if err == nil {
 		if currentWriter > 9 {
 			log.Print("Too many log writers!")
 		} else {
-			_, newErr := file.WriteString("Hello!")
-			fmt.Println(newErr)
+			log.Print("Attached new output:", fileName)
 			writer := bufio.NewWriter(file)
 			messages := make(chan *RFC3164.Message, 500)
 			logWriter = &LogWriter{file, writer, messages, fileName}
@@ -59,22 +57,10 @@ func New(fileName string) (*LogWriter, error) {
 	return  nil, err
 }
 
-func Process(finish <-chan bool, messages chan *RFC3164.Message) {
-	go func() {
-		for message := range messages {
-			for x := 0; x < currentWriter; x ++ {
-				writer := writers[x]
-				writer.messages <- message
-			}
-		}
-	}()
-
-	for {
-		select {
-		case <- finish:
-			log.Print("logwriter: signalled to end, closing")
-			return
-		}
+func Process(message *RFC3164.Message) {
+	for x := 0; x < currentWriter; x ++ {
+		writer := writers[x]
+		writer.messages <- message
 	}
 }
 

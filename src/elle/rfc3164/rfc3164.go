@@ -135,12 +135,18 @@ func MakeMessages(finish <-chan bool, lines <-chan string, messages chan<- *Mess
 	for {
 		select {
 		case <- finish:
+			{
 				log.Print("RFC3164: Signalled to end, closing")
 				return
+			}
 		case line  := <-lines:
 				newMessage, err := New(line)
-				if err  != nil { log.Print("RFC3164:", err); break; }
-				messages <- newMessage
+				if err  == nil { 
+					messages <- newMessage
+				} else {
+					log.Print("RFC3164:", err, " caused by ", line)
+				}
+
 		}
 	}
 }

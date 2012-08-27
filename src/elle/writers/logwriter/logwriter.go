@@ -24,7 +24,6 @@ func (logWriter *LogWriter)WriteMessage(msg *RFC3164.Message) {
 
 func (logWriter *LogWriter)WriteString(output string) {
 	logWriter.writer.WriteString(output + "\n")
-	logWriter.writer.Flush()
 }
 
 func (logWriter *LogWriter)Close() {

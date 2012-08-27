@@ -97,22 +97,23 @@ func (severity* Severity)  String() string {
 	case Debug : { return "Debug"; }
 	}
 
-	return "nil";
+	return "Invalid";
 }
 
 
-var messageRegex = regexp.MustCompile(`^<(?P<facility>\d{1,2})(?P<severity>\d)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<HostnameTag>[^(:|\[)]+).*?:(?P<message>.*)`)
+var messageRegex = regexp.MustCompile(`^<(?P<pri>\d+)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<HostnameTag>[^(:|\[)]+).*?:(?P<message>.*)`)
 
 func New(packet string) (*Message, error) {
 	if matches := messageRegex.FindStringSubmatch(packet); matches != nil {
-		var facility, severity int64
+		var facility, severity,pri int64
 		var hostname, tag string
+		pri, _ = strconv.ParseInt(matches[1], 10, 8)
 
-		facility, _ = strconv.ParseInt(matches[1], 10, 8)
-		severity, _ = strconv.ParseInt(matches[2], 10, 8)
-		timestamp := matches[3]
+		facility = pri / 8
+		severity = pri - (facility * 8) 
+		timestamp := matches[2]
 
-		hostTag := strings.TrimSpace(matches[4])
+		hostTag := strings.TrimSpace(matches[3])
 		if strings.Contains(hostTag, " ") {
 			split :=  strings.Split(hostTag, " ")
 			hostname = split[0]
@@ -121,7 +122,7 @@ func New(packet string) (*Message, error) {
 			hostname = "127.0.0.1"
 			tag = hostTag
 		}
-		message := matches[5]
+		message := matches[4]
 
 		return &Message{ Facility(facility), Severity(severity), timestamp, hostname, tag, message}, nil
 	}

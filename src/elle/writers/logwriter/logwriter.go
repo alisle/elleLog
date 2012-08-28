@@ -23,15 +23,21 @@ func (logWriter *LogWriter)WriteMessage(msg *RFC3164.Message) {
 }
 
 func (logWriter *LogWriter)WriteString(output string) {
-	logWriter.writer.WriteString(output + "\n")
+	if useBuffers {
+		logWriter.writer.WriteString(output + "\n")
+	} else {
+		logWriter.file.WriteString(output + "\n")
+	}
 }
 
 func (logWriter *LogWriter)Close() {
+	logWriter.writer.Flush()
 	logWriter.file.Close()
 }
 
 var writers = make([]*LogWriter, 10)
 var currentWriter = 0
+var useBuffers = false
 
 func New(fileName string) (*LogWriter, error) {
 	var logWriter *LogWriter
@@ -41,7 +47,7 @@ func New(fileName string) (*LogWriter, error) {
 		if currentWriter > 9 {
 			log.Print("Too many log writers!")
 		} else {
-			log.Print("Attached new output:", fileName)
+			log.Print("Attached new logfile output:", fileName)
 			writer := bufio.NewWriter(file)
 			messages := make(chan *RFC3164.Message, 500)
 			logWriter = &LogWriter{file, writer, messages, fileName}
@@ -60,6 +66,14 @@ func Process(message *RFC3164.Message) {
 	for x := 0; x < currentWriter; x ++ {
 		writer := writers[x]
 		writer.messages <- message
+	}
+}
+
+func Close() {
+	for x := 0; x < currentWriter; x ++ {
+		writer := writers[x]
+		close(writer.messages)
+		writer.Close()
 	}
 }
 

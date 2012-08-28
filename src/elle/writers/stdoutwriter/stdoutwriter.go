@@ -5,6 +5,9 @@ import (
 	"log"
 )
 
+var ShowOutput = false
 func Process(message *RFC3164.Message) {
-	log.Print(message)
+	if ShowOutput {
+		log.Print(message)
+	}
 }

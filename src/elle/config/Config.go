@@ -26,6 +26,15 @@ func (this *Config)GetSection(section string) (map[string][]string, bool) {
 	return sectionMap, ok
 }
 
+func (this *Config)GetFirstVariable(section string, variable string) (string, bool) {
+	if sectionMap, isOK := this.GetSection(section); isOK {
+		if variableSlice, ok := sectionMap[variable]; ok {
+			return variableSlice[0], ok
+		}
+	}
+
+	return "", false;
+}
 func (this *Config)GetVariable(section string, variable string) ([]string, bool) {
 	if sectionMap, isOK := this.GetSection(section); isOK {
 		variableSlice, ok := sectionMap[variable];
@@ -38,7 +47,7 @@ func (this *Config)generate(fileName string) error {
 	this.internalMap = make(map[string](map[string][]string))
 
 	confRegex := regexp.MustCompile("^(?P<section>[^\\.]+)\\.(?P<var>[^=]+)=(?P<value>.*)")
-	configFile := WorkingDirectory + fileName
+	configFile := fileName
 	log.Print("Loading : ", configFile)
 	file, err := os.Open(configFile)
 	if err != nil {

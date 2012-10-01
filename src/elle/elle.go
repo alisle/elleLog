@@ -8,13 +8,14 @@ import (
 	"elle/writers/stdoutwriter"
 	"elle/writers/eswriter"
 	"elle/config"
+	"elle/processors"
 	"os"
 	"os/signal"
 	"strings"
 )
 
 func Setup( finished chan bool, lines chan string, messages chan *RFC3164.Message ) {
-	elleConfig, err := Config.New("/etc/ellelog.cfg")
+	elleConfig, err := Config.New("etc/ellelog.cfg")
 	if err != nil {
 		log.Fatal("Problem: ", err)
 	}
@@ -53,6 +54,8 @@ func Setup( finished chan bool, lines chan string, messages chan *RFC3164.Messag
 			go Listener.UnixStreamListener(unixstream, finished, lines)
 		}
 	}
+
+	Processors.LoadAllPlugins("etc/plugins/")
 }
 
 func Run() {

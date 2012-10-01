@@ -1,13 +1,20 @@
 The current valid plugin tags are:
 
-action - Action
 app_proto - Application Protocol (HTTP, POP, IMAP etc)
+
+event_action - Action
+event_priority
 
 device_address - The Device IP  which generated the action/event
 device_hostname - The Device hostname which generated the action/event
 device_mac - The Device MAC
 device_inbound_interface - The Device interface which received the packet.
 device_outbound_interface - The Device interface which send the packet.
+device_serial_number
+
+device_type
+device_vendor
+device_version
 
 destination_address - The destination IP
 destination_hostname - The destination hostname
@@ -18,7 +25,6 @@ destination_process - The name of the process (e.g. telnetd, sshd etc)
 destination_userid - The destination user id
 destination_username - The destination user name
 destination_vpn - The destination VPN
-
 file_name - The filename
 file_size - The file size
 file_create_time - The file creation time
@@ -54,6 +60,7 @@ bytes_in - The number of bytes received.
 bytes_out - The number of bytes sent.
 
 message - The event message
+message_id - The event message ID
 protocol - The protocol UDP/TCP
 
 request_url - the URL requested
@@ -69,6 +76,18 @@ source_process - The name of the process
 source_userid - The source user id
 source_username - The source user name
 source_vpn - The source VPN
+
+customheader_0 - Custom field
+customheader_1  - Custom field
+customheader_2  - Custom field
+customheader_3  - Custom field
+customheader_4  - Custom field
+customheader_5  - Custom field
+customheader_6  - Custom field
+customheader_7  - Custom field
+customheader_8  - Custom field
+customheader_9  - Custom field
+
 
 customfield_0  - Custom field
 customfield_1  - Custom field

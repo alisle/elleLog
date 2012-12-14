@@ -25,6 +25,11 @@ destination_process - The name of the process (e.g. telnetd, sshd etc)
 destination_userid - The destination user id
 destination_username - The destination user name
 destination_vpn - The destination VPN
+destination_workstation - The destination workstation
+
+logon_type - The logon type (e.g. Local, Networked)
+authentication_type - The authentication type
+
 file_name - The filename
 file_size - The file size
 file_create_time - The file creation time
@@ -76,6 +81,8 @@ source_process - The name of the process
 source_userid - The source user id
 source_username - The source user name
 source_vpn - The source VPN
+source_workstation - The source workstation
+
 
 customheader_0 - Custom field
 customheader_1  - Custom field

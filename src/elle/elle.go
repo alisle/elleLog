@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-func Setup( finished chan bool, lines chan string, messages chan *RFC3164.Message ) {
+func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC3164.Message ) {
 	elleConfig, err := Config.New("etc/ellelog.cfg")
 	if err != nil {
 		log.Fatal("Problem: ", err)
@@ -44,14 +44,14 @@ func Setup( finished chan bool, lines chan string, messages chan *RFC3164.Messag
 	if attachUDP, ok := elleConfig.GetVariable("listener", "attachudp"); ok {
 		for _, host := range attachUDP {
 			log.Print("Starting UPD Listener on ", host)
-			go Listener.UDPListener(host, finished, lines)
+			go Listener.UDPListener(host, finished, packets)
 		}
 	}
 
 	if attachUS, ok := elleConfig.GetVariable("listener", "attachunixstream"); ok {
 		for  _, unixstream := range attachUS {
 			log.Print("Starting UnixStreamListener")
-			go Listener.UnixStreamListener(unixstream, finished, lines)
+			go Listener.UnixStreamListener(unixstream, finished, packets)
 		}
 	}
 
@@ -65,19 +65,19 @@ func Run() {
 
 	exit := make(chan bool)
 	finished := make(chan bool, 3)
-	lines := make(chan string, 1000)
+	packets := make(chan Listener.Packet, 1000)
 	messages := make(chan *RFC3164.Message, 1000)
 	defer func() {
-		close(lines)
+		close(packets)
 		close(messages)
 		close(finished)
 		LogWriter.Close()
 		ESWriter.Close()
 	}()
 
-	Setup(finished, lines, messages)
+	Setup(finished, packets, messages)
 	log.Print("Launching Raw Log to RFC3164 Message")
-	go RFC3164.MakeMessages(finished, lines, messages)
+	go RFC3164.MakeMessages(finished, packets, messages)
 
 
 	catchSIGTERM := make(chan os.Signal, 1)
@@ -94,9 +94,10 @@ func Run() {
 	{
 		select {
 			case message := <- messages:
-				LogWriter.Process(message)
-				StdoutWriter.Process(message)
-				ESWriter.Process(message)
+                Processors.CheckMessage(message)
+				//LogWriter.Process(message)
+				//StdoutWriter.Process(message)
+				//ESWriter.Process(message)
 
 			case <- exit:
 				log.Print("Caught Sigterm")

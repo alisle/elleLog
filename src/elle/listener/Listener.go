@@ -7,16 +7,20 @@ import (
 )
 
 
-
-func UDPListener(port string, finish <-chan bool, lines chan<- string) {
-	listener("udp", port, finish , lines)
+type Packet struct {
+    Host string
+    Message string
 }
 
-func UnixDatagramListener(fileName string, finish <-chan bool, lines chan<- string) {
-	listener("unixgram", fileName, finish, lines)
+func UDPListener(port string, finish <-chan bool, packets chan<- Packet) {
+	listener("udp", port, finish , packets)
 }
 
-func UnixStreamListener(fileName string, finish <-chan bool, lines chan<- string) {
+func UnixDatagramListener(fileName string, finish <-chan bool, packets chan<- Packet) {
+	listener("unixgram", fileName, finish, packets)
+}
+
+func UnixStreamListener(fileName string, finish <-chan bool, packets chan<- Packet) {
 
 	var err error 
 	if _, err := os.Stat(fileName); err == nil {
@@ -54,14 +58,14 @@ func UnixStreamListener(fileName string, finish <-chan bool, lines chan<- string
 					log.Print("Connection Closed.")
 					 break;
 				} else {
-					 lines <- string(buffer[0:bytesRead])
+					 packets <- Packet{ "127.0.0.1", string(buffer[0:bytesRead]) }
 				}
 			}
 		}()
 	}
 }
 
-func listener(prot string, url string, finish <-chan bool, lines chan<- string) {
+func listener(prot string, url string, finish <-chan bool, packets chan<- Packet) {
 	listener, err := net.ListenPacket(prot, url)
 	if err != nil { 
 		log.Print("ListenPacket Failure: ", err, " not listening") 
@@ -71,11 +75,11 @@ func listener(prot string, url string, finish <-chan bool, lines chan<- string) 
 	go func() {
 		for  {
 			buffer := make([]byte, 1024)
-			bytesRead, _, err := listener.ReadFrom(buffer[0:])
+			bytesRead, address, err := listener.ReadFrom(buffer[0:])
 			if err != nil {
 				 log.Print("Listener: Unable to Read Packet!")
 			} else {
-				 lines <- string(buffer[0:bytesRead])
+				 packets <- Packet{ address.String(), string(buffer[0:bytesRead]) }
 			}
 		}
 	}()

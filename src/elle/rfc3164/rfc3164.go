@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 	"fmt"
+    "elle/listener"
 )
 
 type Message struct {
@@ -15,8 +16,8 @@ type Message struct {
 	Severity Severity 
 	TimeStamp string
 	Hostname string
-	Tag string
 	Content string
+    IP string
 }
 
 
@@ -99,40 +100,33 @@ func (severity* Severity)  String() string {
 
 	return "Invalid";
 }
+var messageRegex = regexp.MustCompile(`^<(?P<pri>\d+)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<Hostname>\S+)\s(?P<message>.*)`)
 
-
-var messageRegex = regexp.MustCompile(`^<(?P<pri>\d+)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<HostnameTag>[^(:|\[)]+).*?:(?P<message>.*)`)
-
-func New(packet string) (*Message, error) {
-	if matches := messageRegex.FindStringSubmatch(packet); matches != nil {
+func New(packet Listener.Packet) (*Message, error) {
+    line := packet.Message
+	if matches := messageRegex.FindStringSubmatch(line); matches != nil {
 		var facility, severity,pri int64
-		var hostname, tag string
+		var hostname string
 		pri, _ = strconv.ParseInt(matches[1], 10, 8)
 
 		facility = pri / 8
 		severity = pri - (facility * 8) 
 		timestamp := matches[2]
 
-		hostTag := strings.TrimSpace(matches[3])
-		if strings.Contains(hostTag, " ") {
-			split :=  strings.Split(hostTag, " ")
-			hostname = split[0]
-			tag = split[1]
-		} else {
-			hostname = "127.0.0.1"
-			tag = hostTag
-		}
-		message := matches[4]
+    hostname = strings.TrimSpace(matches[3])
+	message := matches[4]
 
-		return &Message{ Facility(facility), Severity(severity), timestamp, hostname, tag, message}, nil
+		return &Message{ Facility(facility), Severity(severity), timestamp, hostname, message, packet.Host}, nil
 	}
+
+    log.Print("Recieved Illegal Packet: ", packet.Message)
 	return &Message{}, errors.New("Message is not a valid RFC3164 packet")
 }
 func (message *Message) String() string {
-	return fmt.Sprintf("%s %v.%v %s %s:%s", message.TimeStamp, message.Facility.String(), message.Severity.String(), message.Hostname, message.Tag, message.Content)
+	return fmt.Sprintf("%s %v.%v %s %s", message.TimeStamp, message.Facility.String(), message.Severity.String(), message.Hostname,  message.Content)
 }
 
-func MakeMessages(finish <-chan bool, lines <-chan string, messages chan<- *Message) {
+func MakeMessages(finish <-chan bool, lines <-chan Listener.Packet, messages chan<- *Message) {
 	for {
 		select {
 		case <- finish:

@@ -119,7 +119,6 @@ func New(packet Listener.Packet) (*Message, error) {
 		return &Message{ Facility(facility), Severity(severity), timestamp, hostname, message, packet.Host}, nil
 	}
 
-    log.Print("Recieved Illegal Packet: ", packet.Message)
 	return &Message{}, errors.New("Message is not a valid RFC3164 packet")
 }
 func (message *Message) String() string {

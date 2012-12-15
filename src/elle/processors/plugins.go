@@ -19,10 +19,12 @@ type Plugin struct {
 	Mapping map[string][]string
 }
 
-var Plugins = make(map[string]*Plugin)
-
-
 type Event map[string]string
+
+var Plugins = make(map[string]*Plugin)
+var messages chan *RFC3164.Message
+var events chan  Event
+
 
 func LoadAllPlugins(pluginDir string) {
 	log.Print("Searching: ", pluginDir)
@@ -41,33 +43,45 @@ func LoadAllPlugins(pluginDir string) {
 
 }
 
-func CheckMessage(message *RFC3164.Message) {
+func AttachMsgChannel(msgs chan *RFC3164.Message) {
+    messages = msgs
+}
+
+func AttachEventsChannel(ents chan Event) {
+    events = ents
+}
+
+
+func StartProcessing() {
+    for x := 0; x < 20; x++ {
+        go CheckMessage()
+    }
+}
+func CheckMessage()  {
 /* Go through all the plugins against the message and figure out the percentage of hits */
-    var bestEvent = Event {} 
+    for message := range messages {
+        var bestEvent = Event {}
 
-    for _, plugin := range Plugins {
-        event := processMessage(message, plugin)
+        for _, plugin := range Plugins {
+            event := processMessage(message, plugin)
 
-        if len(event) > len(bestEvent) {
-            bestEvent = event
+            if len(event) > len(bestEvent) {
+                bestEvent = event
+            }
+            event["Plugin"] = plugin.Name
+            event["raw_syslog"] = message.Content
+            event["raw_from"] = message.IP
+            event["raw_timestamp"] = message.TimeStamp
+            event["raw_hostname"] = message.Hostname
         }
-        event["Plugin"] = plugin.Name
+
+        //dumpEvent(bestEvent)
+        if len(bestEvent) > 0  {
+            events <- bestEvent
+        }
     }
-    dumpEvent(bestEvent)
 }
-
-func dumpEvent(event Event) {
-
-    log.Print("New Event:")
-    for key,value := range event {
-        log.Print("\t", key, " : ", value)
-    }
-
-    log.Print("\n")
-}
-
 func processMessage(message *RFC3164.Message, plugin *Plugin) (Event) {
-
     var lines = [] string {}
 
     if plugin.LineEnd != "" {
@@ -130,8 +144,6 @@ func processMessage(message *RFC3164.Message, plugin *Plugin) (Event) {
                 if _, ok := plugin.Mapping[currentKey]; ok {
                     forMapping = currentKey
                     takeField = true
-
-                    break;
                 }
 
                 x--

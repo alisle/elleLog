@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+var PacketsReceived = 0
 
 type Packet struct {
     Host string
@@ -47,6 +48,7 @@ func UnixStreamListener(fileName string, finish <-chan bool, packets chan<- Pack
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
+            log.Print("Error: ", err)
 			continue
 		}
 
@@ -55,9 +57,10 @@ func UnixStreamListener(fileName string, finish <-chan bool, packets chan<- Pack
 				buffer := make([]byte, 1024)
 				bytesRead, err := conn.Read(buffer[0:])
 				if err != nil {
-					log.Print("Connection Closed.")
+                    log.Print("Unix Stream: Connection Closed.")
 					 break;
 				} else {
+                    PacketsReceived++
 					 packets <- Packet{ "127.0.0.1", string(buffer[0:bytesRead]) }
 				}
 			}
@@ -73,19 +76,19 @@ func listener(prot string, url string, finish <-chan bool, packets chan<- Packet
 	}
 
 	go func() {
+        buffer := make([]byte, 1024)
 		for  {
-			buffer := make([]byte, 1024)
 			bytesRead, address, err := listener.ReadFrom(buffer[0:])
 			if err != nil {
 				 log.Print("Listener: Unable to Read Packet!")
 			} else {
+                 PacketsReceived++
 				 packets <- Packet{ address.String(), string(buffer[0:bytesRead]) }
 			}
 		}
 	}()
 
 	for  {
-
 		select  {
 		case <- finish:
 			log.Print("listener: signalled to end, closing")

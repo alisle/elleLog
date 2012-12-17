@@ -9,10 +9,17 @@ import (
 )
 var WorkingDirectory string
 
+
+type ConfigElement struct {
+    Value string
+    Keys map[string] ConfigElement
+}
+
 type  Config  struct {
 	fileName string
 	internalMap map[string](map[string][]string)
 }
+
 
 func New(fileName string) (*Config, error) {
 	conf := &Config{fileName, nil}
@@ -79,6 +86,51 @@ func (this *Config)generate(fileName string) error {
 				mapSection[variable] = append(variableSection, value)
 			}
 		}
+
+		line, _, err = reader.ReadLine()
+	}
+	return nil
+}
+
+func GenerateConfig2(fileName string) (error){
+    var config ConfigElement
+
+	configFile := fileName
+	log.Print("Loading : ", configFile)
+	file, err := os.Open(configFile)
+	if err != nil {
+		log.Print("Error reading file, aborting...", configFile)
+		return err 
+	}
+
+	reader := bufio.NewReader(file)
+
+	line, _, err :=  reader.ReadLine()
+	for err == nil {
+		confLine := string(line)
+        keyvalue := strings.Split(confLine, "=")
+        key := keyvalue[0]
+        value := keyvalue[1]
+
+        totalSections := len(key) - 1
+        countSections := 0
+
+        var currentMap = config 
+        var sections = strings.Split(key, ".")
+
+        for _, section := range sections {
+            if countSections < totalSections {
+                if _, ok := currentMap.Keys[section]; !ok {
+                    currentMap.Keys[section] = ConfigElement { "", make(map[string]ConfigElement)}
+                }
+
+                currentMap = currentMap.Keys[section]
+            } else {
+                currentMap.Keys[section] = ConfigElement{ value, nil}
+            }
+
+            countSections++
+        }
 
 		line, _, err = reader.ReadLine()
 	}

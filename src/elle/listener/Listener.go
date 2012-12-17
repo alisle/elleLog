@@ -1,17 +1,24 @@
 package Listener
 
+// Imports
 import (
 	"net"
 	"log"
 	"os"
 )
 
+//External Globals
 var PacketsReceived = 0
+var LifetimePacketsReceived = 0
 
+//Internal Globals
+
+// Types
 type Packet struct {
     Host string
     Message string
 }
+
 
 func UDPListener(port string, finish <-chan bool, packets chan<- Packet) {
 	listener("udp", port, finish , packets)
@@ -74,19 +81,19 @@ func listener(prot string, url string, finish <-chan bool, packets chan<- Packet
 		log.Print("ListenPacket Failure: ", err, " not listening") 
 		return
 	}
-
-	go func() {
+    
+    go func() {
         buffer := make([]byte, 1024)
-		for  {
-			bytesRead, address, err := listener.ReadFrom(buffer[0:])
-			if err != nil {
-				 log.Print("Listener: Unable to Read Packet!")
-			} else {
-                 PacketsReceived++
-				 packets <- Packet{ address.String(), string(buffer[0:bytesRead]) }
-			}
-		}
-	}()
+        for  {
+            bytesRead, address, err := listener.ReadFrom(buffer[0:])
+            if err != nil {
+                 log.Print("Listener: Unable to Read Packet!")
+            } else {
+                PacketsReceived++
+                packets <- Packet{ address.String(), string(buffer[0:bytesRead]) }
+            }
+        }
+    }()
 
 	for  {
 		select  {

@@ -1,4 +1,6 @@
 package Processors 
+
+// Imports
 import (
 	"os"
 	"log"
@@ -7,8 +9,16 @@ import (
 	"path/filepath"
 	"strings"
 )
+// External Globals
+var Plugins = make(map[string]*Plugin)
+var EventsReceived = 0 
+var LifetimeEventsReceived = 0
 
+// Internal Globals
+var messages chan *RFC3164.Message
+var events chan  Event
 
+// Types
 type Plugin struct {
 	Name string
     Version string
@@ -20,10 +30,6 @@ type Plugin struct {
 }
 
 type Event map[string]string
-
-var Plugins = make(map[string]*Plugin)
-var messages chan *RFC3164.Message
-var events chan  Event
 
 
 func LoadAllPlugins(pluginDir string) {
@@ -75,9 +81,9 @@ func CheckMessage()  {
             event["raw_hostname"] = message.Hostname
         }
 
-        //dumpEvent(bestEvent)
         if len(bestEvent) > 0  {
             events <- bestEvent
+            LifetimeEventsReceived++
         }
     }
 }

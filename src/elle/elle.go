@@ -1,5 +1,6 @@
 package ellelog
 
+// Imports
 import (
 	"log"
 	"elle/rfc3164"
@@ -15,8 +16,8 @@ import (
    "time"
    "runtime"
 )
-
-var NumCPU = 4
+// External Globals
+var NUMCPU = 4
 
 func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC3164.Message ) {
 	elleConfig, err := Config.New("etc/ellelog.cfg")
@@ -69,9 +70,9 @@ func Run() {
 
 	exit := make(chan bool)
 	finished := make(chan bool, 3)
-	packets := make(chan Listener.Packet, 1000)
-	messages := make(chan *RFC3164.Message, 1000)
-    events := make(chan Processors.Event, 1000)
+	packets := make(chan Listener.Packet,   1000000)
+	messages := make(chan *RFC3164.Message, 1000000)
+    events := make(chan Processors.Event,   1000000)
 	defer func() {
 		close(packets)
 		close(messages)
@@ -79,15 +80,16 @@ func Run() {
 		LogWriter.Close()
 		ESWriter.Close()
 	}()
-    runtime.GOMAXPROCS(NumCPU)
+    runtime.GOMAXPROCS(NUMCPU)
 
     log.Print("Maximum number of CPUS: ", runtime.NumCPU())
-    log.Print("Setting number of CPUS:",  runtime.GOMAXPROCS(NumCPU))
+    log.Print("Setting number of CPUS: ",  runtime.GOMAXPROCS(NUMCPU))
 
 
 	Setup(finished, packets, messages)
 	log.Print("Launching Raw Log to RFC3164 Message")
-	go RFC3164.MakeMessages(finished, packets, messages)
+
+    RFC3164.StartProcessing(finished, packets, messages)
 
     Processors.AttachMsgChannel(messages)
     Processors.AttachEventsChannel(events)
@@ -103,16 +105,23 @@ func Run() {
 		}
 	}()
 
-    var EPS = 0 
-
     go func() {
         for {
             select {
                 case <- time.After(2 * time.Second): 
                 {
-                    log.Print("Sumary Packets/sec = ", Listener.PacketsReceived / 2, " Events/sec: ", EPS / 2, " Current number of GoRoutines: ", runtime.NumGoroutine() )
+                    Listener.LifetimePacketsReceived += Listener.PacketsReceived
+                    RFC3164.LifetimeMessagesReceived += RFC3164.MessagesReceived
+                    Processors.LifetimeEventsReceived += Processors.EventsReceived
+
+                    log.Print("Sumary:")
+                    log.Print("\t Packets/sec = ", Listener.PacketsReceived / 2, " Events/sec = ", Processors.EventsReceived / 2, " Messages/sec = ", RFC3164.MessagesReceived / 2)
+                    log.Print("\t Packet Queue = ", len(packets), " Event Queue = ", len(events), " Message Queue = ", len(messages))
+                    log.Print("\t Life time Packets = ", Listener.LifetimePacketsReceived, " Life time Events = ", Processors.LifetimeEventsReceived, " Life time Messages = ", RFC3164.LifetimeMessagesReceived )
+                    log.Print("\t Current number of GoRoutines: ", runtime.NumGoroutine())
                     Listener.PacketsReceived = 0
-                    EPS = 0
+                    RFC3164.MessagesReceived = 0
+                    Processors.EventsReceived = 0
                 }
             }
         }
@@ -122,13 +131,12 @@ func Run() {
 	for
 	{
 		select {
-            case event := <- events:
-                EPS++
-                StdoutWriter.Process(event)
+            case _ = <- events:
+                //StdoutWriter.Process(event)
+                //ESWriter.Process(event)
 
 				//LogWriter.Process(message)
 				//StdoutWriter.Process(message)
-				//ESWriter.Process(message)
 
 			case <- exit:
 				log.Print("Caught Sigterm")

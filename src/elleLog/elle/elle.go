@@ -1,4 +1,4 @@
-package ellelog
+package elleLog
 
 // Imports
 import (
@@ -17,47 +17,49 @@ import (
 )
 
 // External Globals
-var elleConfig *Config.Config
-
 func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC3164.Message ) {
-    StdoutWriter.ShowOutput = elleConfig.GetBool(Config.OUTPUT_SHOWSTDOUT, false)
-    if files := elleConfig.GetAllStrings(Config.OUTPUT_ATTACH_FILE); files != nil {
+    ESWriter.Initialize()
+    RFC3164.Initialize()
+
+    StdoutWriter.ShowOutput = Config.GlobalConfig.GetBool(Config.OUTPUT_SHOWSTDOUT, false)
+    if files := Config.GlobalConfig.GetAllStrings(Config.OUTPUT_ATTACH_FILE); files != nil {
         for _, file := range files {
             LogWriter.New(file)
         }
     }
 
-    if elastics := elleConfig.GetAllStrings(Config.OUTPUT_ATTACH_ELASTISEARCH); elastics !=  nil {
+    if elastics := Config.GlobalConfig.GetAllStrings(Config.OUTPUT_ATTACH_ELASTISEARCH); elastics !=  nil {
         for _, elastic := range elastics {
             ESWriter.New(elastic)
         }
     }
 
-    if udp := elleConfig.GetAllStrings(Config.LISTENER_ATTACH_UDP); udp != nil {
+    if udp := Config.GlobalConfig.GetAllStrings(Config.LISTENER_ATTACH_UDP); udp != nil {
         for _, port := range udp {
             go Listener.UDPListener(port, finished, packets)
         }
     }
 
-    if unixStream := elleConfig.GetAllStrings(Config.LISTENER_ATTACH_UNIX_STREAM); unixStream != nil {
+    if unixStream := Config.GlobalConfig.GetAllStrings(Config.LISTENER_ATTACH_UNIX_STREAM); unixStream != nil {
         for _, file := range unixStream {
             go Listener.UnixStreamListener(file, finished, packets)
         }
     }
 
     Processors.LoadAllPlugins("etc/plugins/")
+
 }
 
 func Run() {
 
 	os.Chdir("../..")
 	Config.WorkingDirectory, _ = os.Getwd()
-    config, err := Config.New("etc/ellelog.cfg")
+    elleConfig, err := Config.New("etc/ellelog.cfg")
     if err != nil {
         log.Fatal("Unable to load Config: ", err)
     }
 
-    elleConfig = config
+    Config.GlobalConfig = elleConfig
 
 
     exit := make(chan bool)

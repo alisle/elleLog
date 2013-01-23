@@ -9,14 +9,15 @@ import (
 	"net/http"
 	"io/ioutil"
     "elleLog/elle/processors"
+    "elleLog/elle/config"
     "time"
 )
 
 // External Globals
-var BULK_MAX_ITEMS = 50
 var BULK_USE = true
+var BULK_MAX_ITEMS = 50
 var BULK_SECONDS time.Duration = 1
-var MAX_CONNECTIONS = 5
+var MAX_CONNECTIONS = 3
 
 // Internal Globals
 var servers =  make([]*ESWriter, 10)
@@ -35,6 +36,15 @@ type ESWriter struct {
 	URL string 
     events chan Processors.Event
 }
+
+func Initialize() {
+    BULK_USE = Config.GlobalConfig.GetBool(Config.ELASTICSEARCH_BULK_ENABLE, true)
+    BULK_MAX_ITEMS = Config.GlobalConfig.GetInt(Config.ELASTICSEARCH_BULK_MAX_ITEMS, 50)
+    BULK_SECONDS = time.Duration(Config.GlobalConfig.GetInt(Config.ELASTICSEARCH_BULK_MAX_SECS, 1))
+    MAX_CONNECTIONS = Config.GlobalConfig.GetInt(Config.ELASTICSEARCH_MAX_CONNECTIONS, 3)
+
+}
+
 func (esWriter *ESWriter)postSingleHTTP(event Processors.Event) {
     jsonPacket, err := json.Marshal(event)
     if err != nil {

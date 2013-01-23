@@ -14,3 +14,10 @@ var OUTPUT_ATTACH_ELASTISEARCH = "output.attachelastisearch"
 
 var LISTENER_ATTACH_UDP = "listener.attachudp"
 var LISTENER_ATTACH_UNIX_STREAM = "listener.attachunixstream"
+
+var ELASTICSEARCH_BULK_ENABLE = "elasticsearch.bulk.enable"
+var ELASTICSEARCH_BULK_MAX_ITEMS = "elasticsearch.bulk.max_items"
+var ELASTICSEARCH_BULK_MAX_SECS = "elasticsearch.bulk.max_seconds"
+var ELASTICSEARCH_MAX_CONNECTIONS = "elasticsearch.max_connections"
+
+var RFC3164_THREADS = "rfc3164.threads"

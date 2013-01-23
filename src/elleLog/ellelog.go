@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	ellelog.Run()
+	elleLog.Run()
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"fmt"
     "elleLog/elle/listener"
+    "elleLog/elle/config"
 )
 
 //External Globals
@@ -111,6 +112,9 @@ func (severity* Severity)  String() string {
 	return "Invalid";
 }
 
+func Initialize() {
+    MAXTHREADS =  Config.GlobalConfig.GetInt(Config.RFC3164_THREADS, 10)
+}
 func New(packet Listener.Packet) (*Message, error) {
     line := packet.Message
 	if matches := messageRegex.FindStringSubmatch(line); matches != nil {

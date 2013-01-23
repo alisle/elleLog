@@ -9,6 +9,7 @@ import (
 )
 var WorkingDirectory string
 
+var GlobalConfig *Config
 
 type ConfigElement struct {
     Value *[]string
@@ -147,9 +148,9 @@ func (this *Config)generate(fileName string) (error){
 
 	line, _, err :=  reader.ReadLine()
 	for err == nil {
-		confLine := string(line)
+		confLine := strings.TrimSpace(string(line))
         keyvalue := strings.Index(confLine, "=")
-        if keyvalue < 0 {
+        if strings.HasPrefix(confLine, "#") || keyvalue < 0  {
             line, _, err = reader.ReadLine()
             continue
         }

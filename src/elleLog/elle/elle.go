@@ -8,6 +8,7 @@ import (
     "elleLog/elle/writers/logwriter"
     "elleLog/elle/writers/stdoutwriter"
     "elleLog/elle/writers/eswriter"
+    "elleLog/elle/writers/sswriter"
     "elleLog/elle/config"
     "elleLog/elle/processors"
 	"os"
@@ -34,6 +35,13 @@ func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC
         }
     }
 
+
+    if stats := Config.GlobalConfig.GetAllStrings(Config.OUTPUT_ATTACH_STATSERVER); stats != nil {
+        for _, server := range stats {
+            go SSWriter.New(server)
+        }
+    } 
+
     if udp := Config.GlobalConfig.GetAllStrings(Config.LISTENER_ATTACH_UDP); udp != nil {
         for _, port := range udp {
             go Listener.UDPListener(port, finished, packets)
@@ -45,7 +53,6 @@ func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC
             go Listener.UnixStreamListener(file, finished, packets)
         }
     }
-
     Processors.LoadAllPlugins("etc/plugins/")
 
 }
@@ -130,6 +137,7 @@ func Run() {
             case event := <- events:
                 StdoutWriter.Process(event)
                 ESWriter.Process(event)
+                SSWriter.Process(event)
 
 
             case <- exit:

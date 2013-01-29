@@ -108,6 +108,7 @@ func CheckMessage()  {
 
         if len(bestEvent) > 0  {
             events <- bestEvent
+            EventsReceived++
             LifetimeEventsReceived++
         }
     }

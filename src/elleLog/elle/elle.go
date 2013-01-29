@@ -38,7 +38,7 @@ func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC
 
     if stats := Config.GlobalConfig.GetAllStrings(Config.OUTPUT_ATTACH_STATSERVER); stats != nil {
         for _, server := range stats {
-            go SSWriter.New(server)
+           SSWriter.New(server)
         }
     } 
 

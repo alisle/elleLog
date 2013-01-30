@@ -17,6 +17,7 @@ import (
    "runtime"
 )
 
+
 // External Globals
 func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC3164.Message ) {
     ESWriter.Initialize()

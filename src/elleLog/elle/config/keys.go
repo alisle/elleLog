@@ -24,4 +24,9 @@ var ELASTICSEARCH_MAX_CONNECTIONS = "elasticsearch.max_connections"
 var RFC3164_THREADS = "rfc3164.threads"
 
 
-var SERVER_TCP_ADDRESS = "bind.tcp.address"
+var SERVER_TCP_ADDRESS = "server.listener.tcp_address"
+var SERVER_HTTP_ADDRESS = "server.listener.http_address"
+
+var SERVER_TEMPLATE_DIR = "server.http_address.template_directory"
+var SERVER_HTML_DIR = "server.http_address.html_directory"
+

@@ -2,6 +2,7 @@ package main
 
 import (
 	"elleLog-StatsServer/stats/connections"
+    "elleLog-StatsServer/ws"
 	"elleLog/elle/config"
 	"elleLog/elle/processors"
 	"encoding/gob"
@@ -9,6 +10,8 @@ import (
 	"net"
 	"os"
 )
+
+var events = make(chan Processors.Event, 100)
 
 func handleConnection(conn net.Conn) {
 	decoder := gob.NewDecoder(conn)
@@ -21,38 +24,41 @@ func handleConnection(conn net.Conn) {
 			conn.Close()
 			return
 		}
-		connections.GrabConnections(event)
+
+        events <- event
 	}
 }
 
 func launchServer() {
-	service := Config.GlobalConfig.GetString(Config.SERVER_TCP_ADDRESS, ":4040")
-	tcpAddr, err := net.ResolveTCPAddr("tcp", service)
-	if err != nil {
-		log.Fatal("Unable to Resolve Address: ", err)
-	}
+    go func() {
+        service := Config.GlobalConfig.GetString(Config.SERVER_TCP_ADDRESS, ":4040")
+        tcpAddr, err := net.ResolveTCPAddr("tcp", service)
+        if err != nil {
+            log.Fatal("Unable to Resolve Address: ", err)
+        }
 
-	listener, err := net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		log.Fatal("Unable to Listen at Socket: ", err)
-	}
+        listener, err := net.ListenTCP("tcp", tcpAddr)
+        if err != nil {
+            log.Fatal("Unable to Listen at Socket: ", err)
+        }
 
-	log.Print("Listening on ", service)
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Print("Problem with accept: ", err)
-			continue
-		}
+        log.Print("Listening For elleLog Agents on ", service)
+        for {
+            conn, err := listener.Accept()
+            if err != nil {
+                log.Print("Problem with accept: ", err)
+                continue
+            }
 
-		log.Print("Accepted Connection: ", conn)
+            log.Print("elleLog Agent Connection Accepted: ", conn.RemoteAddr())
 
-		go handleConnection(conn)
+            go handleConnection(conn)
 
-	}
-
+        }
+    }()
 }
-func main() {
+
+func setup() {
 	os.Chdir("../../")
 	Config.WorkingDirectory, _ = os.Getwd()
 
@@ -60,9 +66,18 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to load Config: ", err)
 	}
-
 	Config.GlobalConfig = config
 
 	connections.Initalize()
+    ws.Initialize()
+}
+
+func main() {
+    setup()
 	launchServer()
+    ws.Launch()
+    for event := range events {
+        connections.Process(event)
+        ws.Process(event)
+    }
 }

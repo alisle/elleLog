@@ -65,7 +65,7 @@ func getIP(addr string) IP {
 
 
 
-func GrabConnections(event Processors.Event) {
+func Process(event Processors.Event) {
     if src, ok := event["source_address"]; ok {
         if dst, ok := event["destination_address"]; ok {
             srcip := getIP(src)

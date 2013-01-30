@@ -93,6 +93,16 @@ def StartLogging():
 
     global messages, _SERVERS, _EPS, _ONLYONCE
 
+    smoothEPS = _EPS
+    maxTime = 1
+
+    # We need to smooth out the EPS, if we chuck all the logs as fast as we
+    # can, we end up filling up the buffers and packets get dropped. So we
+    # limit the output
+    if _EPS > 100:
+        smoothEPS = _EPS / 100
+        maxTime = 0.01
+
     logger = netsyslog.Logger()
 
     for server in _SERVERS:
@@ -105,10 +115,13 @@ def StartLogging():
         else:
             logger.add_host(server)
 
+    packetsSent = 0
+    eps_time_start = time.time()
     while 1:
-        time_start = time.time()
+        smooth_time_start = time.time()
+
         messages_sent = 0
-        for x in range(0, _EPS):
+        for x in range(0, smoothEPS):
             messages_sent +=1
             message = messages[random.randrange(0, len(messages))]
             pri = netsyslog.PriPart(syslog.LOG_USER, syslog.LOG_INFO)
@@ -117,16 +130,22 @@ def StartLogging():
             packet = netsyslog.Packet(pri, header, msg)
             logger.send_packet(packet)
 
-        time_taken = time.time() - time_start
-        if time_taken < 1:
-            time.sleep(1 - time_taken)
+        time_taken = time.time() - smooth_time_start
+        if time_taken < maxTime:
+            time.sleep(maxTime - time_taken)
 
-        print "Current EPS=" + str(messages_sent)
+        time_taken = time.time() - eps_time_start
+        if time_taken > 1:
+            if _EPS > 100:
+                print "Current EPS=" + str(messages_sent * 100)
+            else:
+                print "Current EPS=" + str(messages_sent)
 
-        if _ONLYONCE:
+            eps_time_start = time.time()
+
+        packetsSent += messages_sent
+        if _ONLYONCE and packetsSent > _EPS:
             break
-
-
 
 
 try:

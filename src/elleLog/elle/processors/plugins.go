@@ -138,10 +138,10 @@ func regexFunction(info functionInfo, context string) string {
         return ""
     }
 
-    regexKey := info.Arguments[1] 
+    regexKey := info.Arguments[0] 
     log.Print("Regexing " + regexKey)
 
-    regexValue := info.Arguments[2]
+    regexValue := info.Arguments[1]
 
     /* check if regexp actually compiles */
     compRegex, err := regexp.Compile(regexValue) 
@@ -153,6 +153,7 @@ func regexFunction(info functionInfo, context string) string {
 
     result := compRegex.Find([]byte(context))
     if result != nil {
+        log.Print("Match found: " + string(result))
         return string(result)
     } 
 
@@ -241,7 +242,9 @@ func processMessage(message *RFC3164.Message, plugin *Plugin) (Event) {
                     }
                     word = strings.Trim(word, "\" ")
 
+
                     for _, info := range plugin.KeyMap[forMapping] {
+                        log.Print("Tag: " + info.Tag)
                         event[info.Tag] = info.Function(info, word)
                     }
                 takeField = false
@@ -295,6 +298,7 @@ func createFunction(funcString string) (functionInfo, error) {
                 f.Function = splitFunction
             case "regex": 
                 f.FuncType = RegexpFunc
+                f.Function = regexFunction
             case "pos":
                 f.FuncType = PositionFunc
                 f.Function = positionFunction

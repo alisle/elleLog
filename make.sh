@@ -1,5 +1,6 @@
 #!/bin/sh
-export GOPATH=$(pwd)
+export PATH=/usr/local/go/bin:$PATH
+export GOPATH=$(pwd):$GOPATH
 go build elleLog
 
 if [ $? -eq 0 ]; then

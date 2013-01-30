@@ -2,13 +2,13 @@ package Processors
 
 // Imports
 import (
-	"os"
-	"log"
+    "os"
+    "log"
     "errors"
-	"elleLog/elle/config"
+    "elleLog/elle/config"
     "elleLog/elle/rfc3164"
-	"path/filepath"
-	"strings"
+    "path/filepath"
+    "strings"
     "regexp"
     "strconv"
 )
@@ -23,13 +23,13 @@ var events chan Event
 
 // Types
 type Plugin struct {
-	Name string
+    Name string
     Version string
-	LineBegin string
-	LineEnd string
-	PairSep string
-	MaxKey int
-	Mapping map[string][]string
+    LineBegin string
+    LineEnd string
+    PairSep string
+    MaxKey int
+    Mapping map[string][]string
     Functions []functionInfo
     PositionMap map[int][]functionInfo
     KeyMap map[string][]functionInfo
@@ -58,18 +58,18 @@ type functionInfo struct {
 var funcRegex = regexp.MustCompile("(?P<functionName>.*?)\\((?P<vars>.*)\\)")
 
 func LoadAllPlugins(pluginDir string) {
-	log.Print("Searching: ", pluginDir)
-	filepath.Walk(pluginDir, func(path string, f os.FileInfo, err error) error {
-		if !f.IsDir() && strings.HasSuffix(path, ".cfg") {
-			if plugin, err := New(path); err != nil {
-				log.Print("Error loading plugin: ", path)
-			} else {
+    log.Print("Searching: ", pluginDir)
+    filepath.Walk(pluginDir, func(path string, f os.FileInfo, err error) error {
+        if !f.IsDir() && strings.HasSuffix(path, ".cfg") {
+            if plugin, err := New(path); err != nil {
+                log.Print("Error loading plugin: ", path)
+            } else {
                 log.Print("Loading ", plugin.Name, " Plugin")
-				Plugins[plugin.Name] = plugin
-			}
-		}
-		return nil
-	})
+                Plugins[plugin.Name] = plugin
+            }
+        }
+        return nil
+    })
 
 
 }
@@ -131,7 +131,35 @@ func processPositionFunctions(line string, plugin* Plugin, event Event) {
     }
 }
 
+func regexFunction(info functionInfo, context string) string {
+    if len(info.Arguments) != 2 {
+        log.Printf("regexFunction: invalid number of arguments: needs 2, got %d", len(info.Arguments))
+        return ""
+    }
+
+    regexKey := info.Arguments[1] 
+    log.Print("Regexing " + regexKey)
+
+    regexValue := info.Arguments[2]
+
+    /* check if regexp actually compiles */
+    compRegex, err := regexp.Compile(regexValue) 
+
+    if err != nil {
+        log.Printf("regexFunction: error compiling regexp: %s", err)
+        return ""
+    }
+
+    result := compRegex.Find([]byte(context))
+    if result != nil {
+        return string(result)
+    } 
+
+    return context
+}
+
 func mapFunction(info functionInfo, context string) string {
+
     return context
 }
 
@@ -280,20 +308,20 @@ func createFunction(funcString string) (functionInfo, error) {
     return functionInfo{}, errors.New("Invalid Function")
 }
 func New(fileName string) (*Plugin, error)  {
-	plugin := Plugin{}
+    plugin := Plugin{}
 
-	config,err  := Config.New(fileName)
-	if err != nil {
-		log.Print("Failed to load Plugins: ", fileName);
-		return  nil, err 
-	}
+    config,err  := Config.New(fileName)
+    if err != nil {
+        log.Print("Failed to load Plugins: ", fileName);
+        return  nil, err 
+    }
 
     plugin.Name = config.GetString("plugin.name", "")
     plugin.Version = config.GetString("plugin.version", "0.1")
     plugin.LineBegin = config.GetString("seperators.line_begin", "")
     plugin.LineEnd = config.GetString("seperators.line_end", "")
     plugin.PairSep = config.GetString("seperators.pair", "")
-	plugin.Mapping =  map[string][]string{}
+    plugin.Mapping =  map[string][]string{}
     plugin.PositionMap = map[int][]functionInfo {}
     plugin.KeyMap = map[string][]functionInfo {}
 
@@ -338,21 +366,21 @@ func New(fileName string) (*Plugin, error)  {
         }
     }
 
-	for key, value := range  mapping {
-		slice, ok := plugin.Mapping[value[0]]
-		if !ok {
-			slice =  make([]string, 0, 10)
-		}
+    for key, value := range  mapping {
+        slice, ok := plugin.Mapping[value[0]]
+        if !ok {
+            slice =  make([]string, 0, 10)
+        }
 
-		spaces := strings.Count(value[0], " ") + 1
-		if spaces > plugin.MaxKey {
-			plugin.MaxKey = spaces
-		}
+        spaces := strings.Count(value[0], " ") + 1
+        if spaces > plugin.MaxKey {
+            plugin.MaxKey = spaces
+        }
 
-		plugin.Mapping[value[0]] = append(slice, key)
-	}
+        plugin.Mapping[value[0]] = append(slice, key)
+    }
     
-	return &plugin, nil
+    return &plugin, nil
 }
 
 

@@ -30,6 +30,7 @@ def ShowHelp():
     print "\t-n (--number-of-lines)\tSpecify the number of lines to take from each log, default is 1000"
     print "\t-v (--version)\t\tPrint Version"
     print "\t-s (--server)\t\tSpecify the syslog server to use, you can give a comma seperated "
+    print "\t-p (--port)\t\tSpecify a port number for your servers"
     print "\t\t\t\tlist to send to multiple servers,  default is localhost"
     print "\t-d (--keep-date)\tKeep the Dates within the logs when sending them, default is to ignore the date"
     print "\t-e (--eps)\tState the maximum EPS, default is 10"
@@ -95,7 +96,14 @@ def StartLogging():
     logger = netsyslog.Logger()
 
     for server in _SERVERS:
-        logger.add_host(server)
+        host, port = server.split(":")
+        if port:
+            logger.port = port
+
+        if host:
+            logger.add_host(host)
+        else:
+            logger.add_host(server)
 
     while 1:
         time_start = time.time()

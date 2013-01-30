@@ -12,4 +12,6 @@ Implemented Functions
 
 ### Regular Expressions
 
+regex("field_name", "regex")
+
 ### Split

@@ -8,6 +8,8 @@ import (
     "elleLog/elle/processors"
     "text/template"
     "log"
+    "io/ioutil"
+    "fmt"
     "encoding/json"
 )
 
@@ -28,9 +30,38 @@ func Initialize() {
     home = template.Must(template.ParseFiles(template_dir + "/index.html"))
 }
 
+func staticHandler (c http.ResponseWriter, req *http.Request) {
+    path := req.URL.Path
+    log.Print("Path: " + path)
+
+    content, err := ioutil.ReadFile(path[1:])
+
+    if err != nil {
+        // 404
+        e := "404: page not found at " + path + " Err: " + err.Error()
+        log.Print("GET [%s] 404 error %s", path, err)
+        http.Error(c,e,http.StatusNotFound)
+    } else {
+        fmt.Print(string(content))
+    }
+}
 
 func homeHandler (c http.ResponseWriter, req *http.Request) {
-    home.Execute(c, req.Host)
+    path := req.URL.Path
+    log.Print("Path: " + path)
+
+    if path == "/" {
+        home.Execute(c, req.Host)
+    } else {
+        content, err := ioutil.ReadFile(static_dir + path)
+        if err != nil {
+            log.Print("404: " + path)
+            e := "404 error"
+            http.Error(c,e,http.StatusNotFound)
+        } else {
+            fmt.Fprintf(c, string(content))
+        }
+    }
 }
 
 func Process(event Processors.Event) {
@@ -65,6 +96,7 @@ func wsHandler(wsock *websocket.Conn) {
 func Launch() {
     go func() {
         log.Print("HTTP Server Listening on ",  (*addr))
+        // http.HandleFunc("/static", staticHandler)
         http.HandleFunc("/", homeHandler)
         http.Handle("/ws", websocket.Handler(wsHandler))
 

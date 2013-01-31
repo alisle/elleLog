@@ -1,7 +1,9 @@
 <html>
 <head>
 <title>Real-Time Events</title>
+<link rel="stylesheet" type="text/css" href="/css/style.css">
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
 <script type="text/javascript">
     $(function() {
  
@@ -9,31 +11,55 @@
     var msg = $("#msg");
     var log = $("#log");
  
-    function appendLog(msg) {
-        var d = log[0]
-        var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
-        msg.appendTo(log)
-        if (doScroll) {
-            d.scrollTop = d.scrollHeight - d.clientHeight;
-        }
-    }
-
     if (window["WebSocket"]) {
         conn = new WebSocket("ws://{{$}}/ws");
         conn.onclose = function(evt) {
             appendLog($("<div><b>Connection closed.</b></div>"))
         }
         conn.onmessage = function(evt) {
-            appendLog($("<div/>").text(evt.data))
+            var d = log[0]
+            var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
+            var parsedJSON = JSON.parse(evt.data);
+            var myMsg = "<div class='PluginId'>" + parsedJSON.Plugin + "</div>" + parsedJSON.source_address + "," + parsedJSON.destination_address;
+            d3.selectAll('#log')
+                .insert('div')
+                    .attr('class','Event').html(myMsg)
+                    .transition()
+                        .style('opacity',1).duration(250);
+
+            if (doScroll) {
+                d.scrollTop = d.scrollHeight - d.clientHeight;
+            }
         }
     } else {
         appendLog($("<div><b>Your browser does not support WebSockets.</b></div>"))
     }
     });
 </script>
-<style type="text/css">
+<style>
+
 html {
     overflow: hidden;
+}
+
+.Event {
+  background: #fff;
+  padding: 2px;
+  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  width: 100%
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+#header {
+    height: 100px;
+    overflow: auto;
+    position: absolute;
+    width: 100%;
+    background: #bbb;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding: 5px;
 }
  
 body {
@@ -41,8 +67,6 @@ body {
     padding: 0;
     margin: 0;
     width: 100%;
-    height: 100%;
-    background: gray;
 }
  
 #log {
@@ -50,16 +74,18 @@ body {
     margin: 0;
     padding: 0.5em 0.5em 0.5em 0.5em;
     position: absolute;
-    top: 0.5em;
-    left: 0.5em;
-    right: 0.5em;
-    bottom: 3em;
     overflow: auto;
+    position: absolute;
+    border: 1px solid #ddd;
+    top: 100px;
+    width: 100%;
 }
- 
+
 </style>
+ 
 </head>
 <body>
+<div id="header">ElleLog</div>
 <div id="log"></div>
 </body>
 </html>

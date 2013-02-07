@@ -35,13 +35,15 @@ def ShowHelp():
     print "\t-d (--keep-date)\tKeep the Dates within the logs when sending them, default is to ignore the date"
     print "\t-e (--eps)\tState the maximum EPS, default is 10"
     print "\t-o (--only-once)\tOnly send for one second"
+    print "\t-f (--facility)\tSyslog Facility to use"
+    print "\t-p (--priority)\tSyslog priority to use"
     sys.exit()
 
 def Version():
     print "MrLog Version:" + __version__
 
 def ProcessArgs(args):
-    global _MAX_LINES, _SERVERS,_USE_DATE, _EPS, _ONLYONCE
+    global _MAX_LINES, _SERVERS,_USE_DATE, _EPS, _ONLYONCE, _FACILITY, _PRIORITY
 
     for opt, arg in args:
         if opt in ('-n', '--number-of-lines'):
@@ -58,6 +60,10 @@ def ProcessArgs(args):
             _EPS = int(arg)
         elif opt in ('-o', '--only-once'):
             _ONLYONCE = True
+        elif opt in ('-f', '--facility'):
+            _FACILITY = arg
+        elif opt in ('-p', '--priority'):
+            _PRIORITY = arg
 
 
 def ProcessFiles(files):
@@ -151,7 +157,7 @@ def StartLogging():
 
 
 try:
-    options, remainder = getopt.getopt(sys.argv[1:], 'n:hvs:de:o', ['only-once', 'number-of-lines=',
+    options, remainder = getopt.getopt(sys.argv[1:], 'n:hvs:de:of:p:', ['only-once', 'number-of-lines=',
                                                             'server=', 'help', 'version', 'keep-date', '--eps='])
 
     ProcessArgs(options)

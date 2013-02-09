@@ -39,9 +39,10 @@ sacrificing the amount of data being captured for each alarm.
 
 Attacks (ATT)
 ==============
+```
   ATT.1 Backdoor
-    ATT.1.1 Runtime Detected
-    ATT.1.2 Connection
+     ATT.1.1 Runtime Detected
+     ATT.1.2 Connection 
        ATT.1.2.1 Outbound
        ATT.1.2.2 Inbound
        ATT.1.2.3 Init
@@ -102,10 +103,11 @@ Attacks (ATT)
   ATT.10 Port Scan
     ATT.10.1 FIN Scan
     ATT.10.2 SYN Scan
-
+```
 
 State(STA)
 ===========
+```
   STA.1 Anti-Virus
     STA.1.1 Host doesn’t have Anti-Virus installed
     STA.1.2 Host Anti-Virus out of date
@@ -735,10 +737,11 @@ STA.6.20.2.2.2.1Server doesn’t a CHAP
     STA.8.2 Error
        STA.8.2.1 No SIM Detected
        STA.8.2.2 Data usage limit reached
-
+```
 
 Connections (CON)
 ==================
+```
   CON.1 Connection
     CON.1.1 Aed
        CON.1.1.1 DNS
@@ -834,9 +837,10 @@ Connections (CON)
            CON.2.2.9.1 Blacklist
            CON.2.2.9.2 Policy
            CON.2.2.9.3 Invalid Host
-
+```
 Accounts & Accounts Management (ACC)
 =====================================
+```
   ACC.1 Account
     ACC.1.1 Administrator
        ACC.1.1.1 Created
@@ -995,8 +999,10 @@ Accounts & Accounts Management (ACC)
               ACC.5.2.4.3.4 Read Unset
               ACC.5.2.4.3.5 Write Set
               ACC.5.2.4.3.6 Write Unset
+```
 VOIP(VOI)
 ==========
+```
   VOI.1 H.232
     VOI.1.1 Connect
     VOI.1.2 Setup
@@ -1027,3 +1033,4 @@ VOIP(VOI)
   VOI.4 Endpoint 
     VOI.4.1 Added
     VOI.4.2 Removed
+```

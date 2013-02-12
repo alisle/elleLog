@@ -108,7 +108,6 @@ def StartLogging():
 
     logger = netsyslog.Logger()
 
-<<<<<<< HEAD
     for server in args.server:
         if ':' in server:
             host, port = server.split(":")
@@ -119,7 +118,9 @@ def StartLogging():
                 if port:
                     print "Adding port: " + port
                     logger.PORT = int(port)
-=======
+        else:
+            logger.add_host(server)
+
     for server in _SERVERS:
         host = server
         port = 514

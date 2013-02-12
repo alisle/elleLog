@@ -186,7 +186,7 @@ parser.add_argument('-o', '--once',
 parser.add_argument('-f', '--facility',
     help="Syslog facility used for sending logs", default=_FACILITY,
     choices=['local0', 'local1', 'local2', 'local3', 'local4', 'local5', 'local6', 'local7'
-             'kern', 'user', 'mail', 'daemon', 'auth', 'syslog', 'lpr'
+             'kern', 'user', 'mail', 'daemon', 'auth', 'syslog', 'lpr',
              'news', 'uucp', 'cron', 'authpriv', 'ftp' ])
 
 parser.add_argument('-p', '--priority',

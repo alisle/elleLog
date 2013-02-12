@@ -74,11 +74,7 @@ def SyslogFacility(s):
 
     facility = "LOG_" + s.upper()
     intfacility = eval("syslog." + facility)
-
-    if (intfacility >= 0):
-        return int(intfacility)
-    else:
-        raise argparse.ArgumentTypeError("Wrong syslog facility: %s" % s)
+    return int(intfacility)
 
 def SyslogPriority(s):
     ### used as a default
@@ -88,11 +84,7 @@ def SyslogPriority(s):
 
     priority = "LOG_" + s.upper()
     intpriority = eval("syslog." + priority)
-
-    if (intpriority >= 0):
-        return int(intpriority)
-    else:
-        raise argparse.ArgumentTypeError("Wrong syslog priority: %s" % s)
+    return int(intpriority)
 
 def StartLogging():
 
@@ -148,7 +140,7 @@ def StartLogging():
         for x in range(0, smoothEPS):
             messages_sent +=1
             message = messages[random.randrange(0, len(messages))]
-            pri = netsyslog.PriPart(args.facility, args.priority)
+            pri = netsyslog.PriPart(SyslogFacility(args.facility), SyslogPriority(args.priority))
             header = netsyslog.HeaderPart(message["Date"], message["Host"])
             msg = netsyslog.MsgPart(tag="", content=message["Msg"])
             packet = netsyslog.Packet(pri, header, msg)
@@ -192,10 +184,15 @@ parser.add_argument('-o', '--once',
     help="Only send the logs once", default=_ONLYONCE, action='store_true')
 
 parser.add_argument('-f', '--facility',
-    help="Syslog facility used for sending logs", default=_FACILITY, type=SyslogFacility)
+    help="Syslog facility used for sending logs", default=_FACILITY,
+    choices=['local0', 'local1', 'local2', 'local3', 'local4', 'local5', 'local6', 'local7'
+             'kern', 'user', 'mail', 'daemon', 'auth', 'syslog', 'lpr'
+             'news', 'uucp', 'cron', 'authpriv', 'ftp' ])
 
 parser.add_argument('-p', '--priority',
-    help="Syslog priority used for sending logs", default=_PRIORITY, type=SyslogPriority)
+    help="Syslog priority used for sending logs", default=_PRIORITY,
+    choices=['emerg', 'alert', 'crit', 'err', 'warning', 'notice', 'info', 'debug']
+)
 
 parser.add_argument('files',
     help="files with events", nargs='+')

@@ -24,8 +24,6 @@ _FACILITY = 128
 _PRIORITY = 6
 
 
-messages = []
-
 def Version():
     print "MrLog Version:" + __version__
 
@@ -110,6 +108,7 @@ def StartLogging():
 
     logger = netsyslog.Logger()
 
+<<<<<<< HEAD
     for server in args.server:
         if ':' in server:
             host, port = server.split(":")
@@ -120,6 +119,20 @@ def StartLogging():
                 if port:
                     print "Adding port: " + port
                     logger.PORT = int(port)
+=======
+    for server in _SERVERS:
+        host = server
+        port = 514
+
+        if ":" in server:
+            host, port = server.split(":")
+
+        if host:
+            print "Adding host: " + host
+            logger.add_host(host)
+            if port:
+                print "Adding port: " + str(port)
+                logger.PORT = int(port)
         else:
             logger.add_host(server)
 

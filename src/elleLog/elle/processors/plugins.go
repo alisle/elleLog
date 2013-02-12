@@ -244,7 +244,6 @@ func processMessage(message *RFC3164.Message, plugin *Plugin) (Event) {
 
 
                     for _, info := range plugin.KeyMap[forMapping] {
-                        log.Print("Tag: " + info.Tag)
                         event[info.Tag] = info.Function(info, word)
                     }
                 takeField = false

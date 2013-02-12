@@ -20,8 +20,8 @@ _SERVERS = ["127.0.0.1"]
 _USE_DATE = False
 _EPS = 10
 _ONLYONCE = False
-_FACILITY = 128
-_PRIORITY = 6
+_FACILITY = 'local0'
+_PRIORITY = 'info'
 
 SYSLOG_FACILITIES = ['local0', 'local1', 'local2', 'local3',
      'local4', 'local5', 'local6', 'local7',
@@ -142,6 +142,10 @@ def StartLogging():
 
     packetsSent = 0
     eps_time_start = time.time()
+
+    facility = SyslogFacility(args.facility)
+    priority = SyslogPriority(args.priority)
+
     while 1:
         smooth_time_start = time.time()
 
@@ -149,7 +153,7 @@ def StartLogging():
         for x in range(0, smoothEPS):
             messages_sent +=1
             message = messages[random.randrange(0, len(messages))]
-            pri = netsyslog.PriPart(SyslogFacility(args.facility), SyslogPriority(args.priority))
+            pri = netsyslog.PriPart(facility, priority)
             header = netsyslog.HeaderPart(message["Date"], message["Host"])
             msg = netsyslog.MsgPart(tag="", content=message["Msg"])
             packet = netsyslog.Packet(pri, header, msg)

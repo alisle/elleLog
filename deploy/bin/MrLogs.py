@@ -66,6 +66,34 @@ def ServerSplit(s):
     except:
         raise argparse.ArgumentTypeError("Servers must be single server or a list of comma separated servers")
 
+def SyslogFacility(s):
+    ### used as a default
+    global _FACILITY
+
+    intfacility = -1
+
+    facility = "LOG_" + s.upper()
+    intfacility = eval("syslog." + facility)
+
+    if (intfacility >= 0):
+        return int(intfacility)
+    else:
+        raise argparse.ArgumentTypeError("Wrong syslog facility: %s" % s)
+
+def SyslogPriority(s):
+    ### used as a default
+    global _PRIORITY
+
+    intpriority = -1
+
+    priority = "LOG_" + s.upper()
+    intpriority = eval("syslog." + priority)
+
+    if (intpriority >= 0):
+        return int(intpriority)
+    else:
+        raise argparse.ArgumentTypeError("Wrong syslog priority: %s" % s)
+
 def StartLogging():
 
     global messages, args
@@ -129,17 +157,38 @@ def StartLogging():
 
 
 parser = argparse.ArgumentParser(description="Send logs to a series of hosts")
-parser.add_argument('-n', '--numlines', type=int, help="Specify the number of lines to take from each log, default: 1000", default=_MAX_LINES)
-parser.add_argument('-v', '--version', type=bool, help="Print version number and exit.")
-parser.add_argument('-s', '--server', help="Specify syslog server(s) to use, example: 10.0.0.1,10.0.0.2", default="127.0.0.1", type=ServerSplit)
-parser.add_argument('-d', '--keepdate', help="Keep the dates within the logs when sending them. Default: ignore date", default=_USE_DATE)
-parser.add_argument('-e', '--eps', help="EPS rate, default: 10", default=_EPS)
-parser.add_argument('-o', '--once', help="Only send the logs once", default=_ONLYONCE)
-parser.add_argument('-f', '--facility', help="Syslog facility used for sending logs", default=_FACILITY)
-parser.add_argument('-p', '--priority', help="Syslog priority used for sending logs", default=_PRIORITY)
-parser.add_argument('files', help="files with events", nargs='+')
+
+### add command line argument processing
+parser.add_argument('-n', '--numlines', type=int,
+    help="Specify the number of lines to take from each log, default: 1000", default=_MAX_LINES)
+parser.add_argument('-v', '--version',
+    help="Print version number and exit.", action='store_true')
+parser.add_argument('-s', '--server',
+    help="Specify syslog server(s) to use, example: 10.0.0.1,10.0.0.2", default="127.0.0.1", type=ServerSplit)
+
+parser.add_argument('-d', '--keepdate', action='store_true',
+    help="Keep the dates within the logs when sending them. Default: ignore date", default=_USE_DATE)
+
+parser.add_argument('-e', '--eps',
+    help="EPS rate, default: 10", default=_EPS, type=int)
+
+parser.add_argument('-o', '--once',
+    help="Only send the logs once", default=_ONLYONCE, action='store_true')
+
+parser.add_argument('-f', '--facility',
+    help="Syslog facility used for sending logs", default=_FACILITY, type=SyslogFacility)
+
+parser.add_argument('-p', '--priority',
+    help="Syslog priority used for sending logs", default=_PRIORITY, type=SyslogPriority)
+
+parser.add_argument('files',
+    help="files with events", nargs='+')
 
 args = parser.parse_args()
+
+if args.version:
+    Version()
+    exit()
 
 ProcessFiles(args.files)
 

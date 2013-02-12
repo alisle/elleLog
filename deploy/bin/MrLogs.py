@@ -23,6 +23,15 @@ _ONLYONCE = False
 _FACILITY = 128
 _PRIORITY = 6
 
+SYSLOG_FACILITIES = ['local0', 'local1', 'local2', 'local3',
+     'local4', 'local5', 'local6', 'local7',
+     'kern', 'user', 'mail', 'daemon', 'auth',
+     'syslog', 'lpr', 'news', 'uucp', 'cron',
+     'authpriv', 'ftp' ]
+
+SYSLOG_SEVERITIES = ['emerg', 'alert', 'crit', 'err',
+     'warning', 'notice', 'info', 'debug']
+
 messages = []
 
 
@@ -185,14 +194,11 @@ parser.add_argument('-o', '--once',
 
 parser.add_argument('-f', '--facility',
     help="Syslog facility used for sending logs", default=_FACILITY,
-    choices=['local0', 'local1', 'local2', 'local3', 'local4', 'local5', 'local6', 'local7'
-             'kern', 'user', 'mail', 'daemon', 'auth', 'syslog', 'lpr',
-             'news', 'uucp', 'cron', 'authpriv', 'ftp' ])
+    choices=SYSLOG_FACILITIES )
 
 parser.add_argument('-p', '--priority',
     help="Syslog priority used for sending logs", default=_PRIORITY,
-    choices=['emerg', 'alert', 'crit', 'err', 'warning', 'notice', 'info', 'debug']
-)
+    choices=SYSLOG_SEVERITIES )
 
 parser.add_argument('files',
     help="files with events", nargs='+')

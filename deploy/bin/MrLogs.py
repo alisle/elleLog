@@ -23,6 +23,8 @@ _ONLYONCE = False
 _FACILITY = 128
 _PRIORITY = 6
 
+messages = []
+
 
 def Version():
     print "MrLog Version:" + __version__

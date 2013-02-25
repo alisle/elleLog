@@ -14,11 +14,13 @@ html {
 
 .Event {
   background: #fff;
-  padding: 2px;
   border-bottom: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-  width: 100%
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  width: 960px;
   font: Helvetica, Arial, sans-serif;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 #header {
@@ -46,11 +48,41 @@ body {
 #log {
     background: white;
     margin: 0;
-    padding: 0.5em 0.5em 0.5em 0.5em;
+    padding-top: 0.5em;
     position: absolute;
     overflow: auto;
     position: absolute;
     border: 1px solid #ddd;
-    top: 100px;
-    width: 100%;
+    top: 120px;
+    width: 980px;
+    overflow-y: auto;
+}
+
+
+.PluginId {
+    background: #eee;
+    float: left;
+    width: 954px;
+    height: 24px;
+    padding: 3px;
+    overflow-x: hidden;
+}
+
+.Message {
+    padding: 5px;
+    float: right;
+}
+
+.Address {
+    margin-left: 5px;
+}
+
+img.Tag {
+    margin-left: 5px;
+}
+
+.Source {
+}
+
+.Dest {
 }

@@ -4,9 +4,9 @@
 #
 # Author: Alex Lisle alisle@alienvault.com
 
-__version__ = '0.01'
+__version__ = '0.02'
 
-import getopt
+import argparse
 import sys
 import re
 import netsyslog
@@ -20,53 +20,27 @@ _SERVERS = ["127.0.0.1"]
 _USE_DATE = False
 _EPS = 10
 _ONLYONCE = False
+_FACILITY = 'local0'
+_PRIORITY = 'info'
+
+SYSLOG_FACILITIES = ['local0', 'local1', 'local2', 'local3',
+     'local4', 'local5', 'local6', 'local7',
+     'kern', 'user', 'mail', 'daemon', 'auth',
+     'syslog', 'lpr', 'news', 'uucp', 'cron',
+     'authpriv', 'ftp' ]
+
+SYSLOG_SEVERITIES = ['emerg', 'alert', 'crit', 'err',
+     'warning', 'notice', 'info', 'debug']
 
 messages = []
 
-def ShowHelp():
-    print "Welcome to MrLogs " + __version__
-    print "Usage:"
-    print "\t" + sys.argv[0] + " [OPTION]... [LOGS]..."
-    print "\t-n (--number-of-lines)\tSpecify the number of lines to take from each log, default is 1000"
-    print "\t-v (--version)\t\tPrint Version"
-    print "\t-s (--server)\t\tSpecify the syslog server to use, you can give a comma seperated "
-    print "\t\t\t\tlist to send to multiple servers,  default is localhost"
-    print "\t-d (--keep-date)\tKeep the Dates within the logs when sending them, default is to ignore the date"
-    print "\t-e (--eps)\tState the maximum EPS, default is 10"
-    print "\t-o (--only-once)\tOnly send for one second"
-    print "\t-f (--facility)\tSyslog Facility to use"
-    print "\t-p (--priority)\tSyslog priority to use"
-    sys.exit()
 
 def Version():
     print "MrLog Version:" + __version__
 
-def ProcessArgs(args):
-    global _MAX_LINES, _SERVERS,_USE_DATE, _EPS, _ONLYONCE, _FACILITY, _PRIORITY
-
-    for opt, arg in args:
-        if opt in ('-n', '--number-of-lines'):
-            _MAX_LINES =  int(arg)
-        elif opt in ('-h', '--help'):
-            ShowHelp()
-        elif opt in ('-v', '--version'):
-            Version()
-        elif opt in ('-s', '--server'):
-            _SERVERS = [ server.strip() for server in arg.split(",") ]
-        elif opt in ('-d', '--keep-date'):
-            _USE_DATE = True
-        elif opt in ('-e', '--eps'):
-            _EPS = int(arg)
-        elif opt in ('-o', '--only-once'):
-            _ONLYONCE = True
-        elif opt in ('-f', '--facility'):
-            _FACILITY = arg
-        elif opt in ('-p', '--priority'):
-            _PRIORITY = arg
-
 
 def ProcessFiles(files):
-    global messages, _USE_DATE
+    global messages, args
     syslogMask = re.compile(r'^(?P<date>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<host>\S+)\s(?P<msg>.*)')
 
     for file in files:
@@ -75,14 +49,14 @@ def ProcessFiles(files):
         currentFile = open(file)
         line = currentFile.readline()
 
-        for x in range(1, _MAX_LINES):
+        for x in range(1, args.numlines):
             if not line:
                 break
 
             matches  = syslogMask.search(line)
             if matches is not None:
                 message = {}
-                if _USE_DATE:
+                if args.keepdate:
                     message["Date"] =  matches.group(1)
                 else:
                     message["Date"] =  datetime.now().strftime('%b %d %H:%M:%S')
@@ -94,21 +68,61 @@ def ProcessFiles(files):
 
             line = currentFile.readline()
 
+def ServerSplit(s):
+    try:
+        servers = s.split(',')
+        return servers
+    except:
+        raise argparse.ArgumentTypeError("Servers must be single server or a list of comma separated servers")
+
+def SyslogFacility(s):
+    ### used as a default
+    global _FACILITY
+
+    intfacility = -1
+
+    facility = "LOG_" + s.upper()
+    intfacility = eval("syslog." + facility)
+    return int(intfacility)
+
+def SyslogPriority(s):
+    ### used as a default
+    global _PRIORITY
+
+    intpriority = -1
+
+    priority = "LOG_" + s.upper()
+    intpriority = eval("syslog." + priority)
+    return int(intpriority)
+
 def StartLogging():
 
-    global messages, _SERVERS, _EPS, _ONLYONCE
+    global messages, args
 
-    smoothEPS = _EPS
+    smoothEPS = args.eps
     maxTime = 1
 
     # We need to smooth out the EPS, if we chuck all the logs as fast as we
     # can, we end up filling up the buffers and packets get dropped. So we
     # limit the output
-    if _EPS > 100:
-        smoothEPS = _EPS / 100
+    if args.eps > 100:
+        smoothEPS = args.eps / 100
         maxTime = 0.01
 
     logger = netsyslog.Logger()
+
+    for server in args.server:
+        if ':' in server:
+            host, port = server.split(":")
+
+            if host:
+                print "Adding host: " + host
+                logger.add_host(host)
+                if port:
+                    print "Adding port: " + port
+                    logger.PORT = int(port)
+        else:
+            logger.add_host(server)
 
     for server in _SERVERS:
         host = server
@@ -128,6 +142,10 @@ def StartLogging():
 
     packetsSent = 0
     eps_time_start = time.time()
+
+    facility = SyslogFacility(args.facility)
+    priority = SyslogPriority(args.priority)
+
     while 1:
         smooth_time_start = time.time()
 
@@ -135,7 +153,7 @@ def StartLogging():
         for x in range(0, smoothEPS):
             messages_sent +=1
             message = messages[random.randrange(0, len(messages))]
-            pri = netsyslog.PriPart(syslog.LOG_USER, syslog.LOG_INFO)
+            pri = netsyslog.PriPart(facility, priority)
             header = netsyslog.HeaderPart(message["Date"], message["Host"])
             msg = netsyslog.MsgPart(tag="", content=message["Msg"])
             packet = netsyslog.Packet(pri, header, msg)
@@ -155,23 +173,49 @@ def StartLogging():
             eps_time_start = time.time()
 
         packetsSent += messages_sent
-        if _ONLYONCE and packetsSent > _EPS:
+        if args.once and packetsSent > args.eps:
             break
 
 
-try:
-    options, remainder = getopt.getopt(sys.argv[1:], 'n:hvs:de:of:p:', ['only-once', 'number-of-lines=',
-                                                            'server=', 'help', 'version', 'keep-date', '--eps='])
+parser = argparse.ArgumentParser(description="Send logs to a series of hosts")
 
-    ProcessArgs(options)
-    ProcessFiles(remainder)
+### add command line argument processing
+parser.add_argument('-n', '--numlines', type=int,
+    help="Specify the number of lines to take from each log, default: 1000", default=_MAX_LINES)
+parser.add_argument('-v', '--version',
+    help="Print version number and exit.", action='store_true')
+parser.add_argument('-s', '--server',
+    help="Specify syslog server(s) to use, example: 10.0.0.1,10.0.0.2", default="127.0.0.1", type=ServerSplit)
 
-    if len(messages) < 1:
-        ShowHelp()
+parser.add_argument('-d', '--keepdate', action='store_true',
+    help="Keep the dates within the logs when sending them. Default: ignore date", default=_USE_DATE)
 
-    StartLogging()
+parser.add_argument('-e', '--eps',
+    help="EPS rate, default: 10", default=_EPS, type=int)
 
-except getopt.GetoptError:
-    ShowHelp()
+parser.add_argument('-o', '--once',
+    help="Only send the logs once", default=_ONLYONCE, action='store_true')
 
+parser.add_argument('-f', '--facility',
+    help="Syslog facility used for sending logs", default=_FACILITY,
+    choices=SYSLOG_FACILITIES )
 
+parser.add_argument('-p', '--priority',
+    help="Syslog priority used for sending logs", default=_PRIORITY,
+    choices=SYSLOG_SEVERITIES )
+
+parser.add_argument('files',
+    help="files with events", nargs='+')
+
+args = parser.parse_args()
+
+if args.version:
+    Version()
+    exit()
+
+ProcessFiles(args.files)
+
+if len(messages) < 1:
+    exit(1)
+
+StartLogging()

@@ -1,4 +1,6 @@
-elleLog
-=======
+elleLog, Thoughts on SIEM
+=======================
 
-MultiThreaded Syslog Server with Elastic Search Support written in Go
+elleLog is an experimental POC SIEM designed to explore interesting aspects of SIEM design. elleLog is designed to be multi-threaded, scalable. 
+
+It features a innovative plugin design, ElasticSearch back-end and built in Syslog server.

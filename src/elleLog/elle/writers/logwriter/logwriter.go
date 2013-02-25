@@ -2,7 +2,7 @@ package LogWriter
 
 import ( 
 	"log"
-	"elleLog/elle/rfc3164"
+	"elleLog/elle/messages"
 	"os"
 	"bufio"
 )
@@ -10,7 +10,7 @@ import (
 type LogWriter struct {
 	file *os.File
 	writer *bufio.Writer
-	messages chan *RFC3164.Message
+	messages chan *Messages.Message
 	FileName string
 }
 func (logWriter *LogWriter)Process()  {
@@ -18,7 +18,7 @@ func (logWriter *LogWriter)Process()  {
 		logWriter.WriteMessage(message)
 	}
 }
-func (logWriter *LogWriter)WriteMessage(msg *RFC3164.Message) {
+func (logWriter *LogWriter)WriteMessage(msg *Messages.Message) {
 	logWriter.WriteString(msg.String())
 }
 
@@ -49,7 +49,7 @@ func New(fileName string) (*LogWriter, error) {
 		} else {
 			log.Print("Attached new logfile output:", fileName)
 			writer := bufio.NewWriter(file)
-			messages := make(chan *RFC3164.Message, 500)
+			messages := make(chan *Messages.Message, 500)
 			logWriter = &LogWriter{file, writer, messages, fileName}
 			writers[currentWriter] = logWriter
 			currentWriter += 1
@@ -62,7 +62,7 @@ func New(fileName string) (*LogWriter, error) {
 	return  nil, err
 }
 
-func Process(message *RFC3164.Message) {
+func Process(message *Messages.Message) {
 	for x := 0; x < currentWriter; x ++ {
 		writer := writers[x]
 		writer.messages <- message

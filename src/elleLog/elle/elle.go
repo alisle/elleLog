@@ -3,7 +3,7 @@ package elleLog
 // Imports
 import (
 	"log"
-    "elleLog/elle/rfc3164"
+    "elleLog/elle/messages"
     "elleLog/elle/listener"
     "elleLog/elle/writers/logwriter"
     "elleLog/elle/writers/stdoutwriter"
@@ -19,9 +19,11 @@ import (
 
 
 // External Globals
-func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC3164.Message ) {
+func Setup( finished chan bool, packets chan Listener.Packet, messages chan *Messages.Message ) {
+
+    // Initialize the various components.
     ESWriter.Initialize()
-    RFC3164.Initialize()
+    Messages.Initialize()
 
     StdoutWriter.ShowOutput = Config.GlobalConfig.GetBool(Config.OUTPUT_SHOWSTDOUT, false)
     if files := Config.GlobalConfig.GetAllStrings(Config.OUTPUT_ATTACH_FILE); files != nil {
@@ -54,15 +56,24 @@ func Setup( finished chan bool, packets chan Listener.Packet, messages chan *RFC
             go Listener.UnixStreamListener(file, finished, packets)
         }
     }
-    Processors.LoadAllPlugins("etc/plugins/")
+
+    if avLogger := Config.GlobalConfig.GetAllStrings(Config.LISTENER_ATTACH_AV_LOGGER); avLogger != nil {
+        for _, logger := range avLogger {
+            go Listener.AVListener(logger, finished, packets)
+        }
+    }
+
+    
+    Processors.LoadAllPlugins(Config.DEFAULT_PLUGIN_DIR)
 
 }
+
 
 func Run() {
 
 	os.Chdir("../..")
 	Config.WorkingDirectory, _ = os.Getwd()
-    elleConfig, err := Config.New("etc/ellelog.cfg")
+    elleConfig, err := Config.New(Config.DEFAULT_CONFIG_FILE)
     if err != nil {
         log.Fatal("Unable to load Config: ", err)
     }
@@ -72,12 +83,13 @@ func Run() {
 
     exit := make(chan bool)
 	finished := make(chan bool, 3)
-	packets := make(chan Listener.Packet,   elleConfig.GetInt(Config.MAX_QUEUE_PACKETS, 1000000))
-	messages := make(chan *RFC3164.Message, elleConfig.GetInt(Config.MAX_QUEUE_MESSAGES, 1000000))
+
+    packets := make(chan Listener.Packet, elleConfig.GetInt(Config.MAX_QUEUE_PACKETS, 1000000))
+	messages := make(chan *Messages.Message, elleConfig.GetInt(Config.MAX_QUEUE_MESSAGES, 1000000))
     events := make(chan Processors.Event,   elleConfig.GetInt(Config.MAX_QUEUE_EVENTS, 1000000))
 
 	defer func() {
-		close(packets)
+        close(packets)
 		close(messages)
 		close(finished)
 		LogWriter.Close()
@@ -91,9 +103,7 @@ func Run() {
 
 	Setup(finished, packets, messages)
 
-    log.Print("Launching Raw Log to RFC3164 Message")
-
-    RFC3164.StartProcessing(finished, packets, messages)
+    Messages.StartProcessing(finished, packets, messages)
 
     Processors.AttachMsgChannel(messages)
     Processors.AttachEventsChannel(events)
@@ -115,16 +125,16 @@ func Run() {
                 case <- time.After(time.Duration(summaryTime) * time.Second): 
                 {
                     Listener.LifetimePacketsReceived += Listener.PacketsReceived
-                    RFC3164.LifetimeMessagesReceived += RFC3164.MessagesReceived
+                    Messages.LifetimeMessagesReceived += Messages.MessagesReceived
                     Processors.LifetimeEventsReceived += Processors.EventsReceived
 
                     log.Print("Summary:")
-                    log.Print("\t Packets/sec = ", Listener.PacketsReceived / summaryTime, " Events/sec = ", Processors.EventsReceived / summaryTime, " Messages/sec = ", RFC3164.MessagesReceived / summaryTime)
+                    log.Print("\t Packets/sec = ", Listener.PacketsReceived / summaryTime, " Events/sec = ", Processors.EventsReceived / summaryTime, " Messages/sec = ", Messages.MessagesReceived / summaryTime)
                     log.Print("\t Packet Queue = ", len(packets), " Event Queue = ", len(events), " Message Queue = ", len(messages))
-                    log.Print("\t Life time Packets = ", Listener.LifetimePacketsReceived, " Life time Events = ", Processors.LifetimeEventsReceived, " Life time Messages = ", RFC3164.LifetimeMessagesReceived )
+                    log.Print("\t Life time Packets = ", Listener.LifetimePacketsReceived, " Life time Events = ", Processors.LifetimeEventsReceived, " Life time Messages = ", Messages.LifetimeMessagesReceived )
                     log.Print("\t Current number of GoRoutines: ", runtime.NumGoroutine())
                     Listener.PacketsReceived = 0
-                    RFC3164.MessagesReceived = 0
+                    Messages.MessagesReceived = 0
                     Processors.EventsReceived = 0
                 }
             }

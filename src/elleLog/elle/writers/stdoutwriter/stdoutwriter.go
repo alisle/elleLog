@@ -1,14 +1,14 @@
 package StdoutWriter
 
 import (
-	"elleLog/elle/rfc3164"
+	"elleLog/elle/messages"
     "elleLog/elle/processors"
 	"log"
     "sort"
 )
 
 var ShowOutput = false
-func ProcessMessage(message *RFC3164.Message) {
+func ProcessMessage(message *Messages.Message) {
 	if ShowOutput {
 		log.Print(message)
 	}

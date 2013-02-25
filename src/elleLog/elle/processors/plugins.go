@@ -6,11 +6,12 @@ import (
     "log"
     "errors"
     "elleLog/elle/config"
-    "elleLog/elle/rfc3164"
+    "elleLog/elle/messages"
     "path/filepath"
     "strings"
     "regexp"
     "strconv"
+    "encoding/base64"
 )
 // External Globals
 var Plugins = make(map[string]*Plugin)
@@ -18,7 +19,7 @@ var EventsReceived = 0
 var LifetimeEventsReceived = 0
 
 // Internal Globals
-var messages chan *RFC3164.Message
+var messages chan *Messages.Message
 var events chan Event
 
 // Types
@@ -33,6 +34,7 @@ type Plugin struct {
     Functions []functionInfo
     PositionMap map[int][]functionInfo
     KeyMap map[string][]functionInfo
+    LitFunctions []functionInfo
 }
 
 type Event map[string]string
@@ -44,6 +46,8 @@ const (
     MapUntilFunc 
     RegexpFunc 
     SplitFunc 
+    d64Func
+    LitFunc
 
 )
 type functionDecl func (functionInfo, string) string
@@ -74,7 +78,7 @@ func LoadAllPlugins(pluginDir string) {
 
 }
 
-func AttachMsgChannel(msgs chan *RFC3164.Message) {
+func AttachMsgChannel(msgs chan *Messages.Message) {
     messages = msgs
 }
 
@@ -95,8 +99,8 @@ func CheckMessage()  {
 
         for _, plugin := range Plugins {
             event := processMessage(message, plugin)
-
-            if len(event) > len(bestEvent) {
+            
+            if len(event) - len(plugin.LitFunctions) > len(bestEvent) {
                 bestEvent = event
             }
             event["Plugin"] = plugin.Name
@@ -116,6 +120,12 @@ func CheckMessage()  {
 
 func positionFunction(info functionInfo, context string) string {
     return context
+}
+
+func litFunction(info functionInfo, context string) string {
+    log.Print("litFunction called, not good!")
+
+    return ""
 }
 
 func processPositionFunctions(line string, plugin* Plugin, event Event) {
@@ -159,7 +169,19 @@ func regexFunction(info functionInfo, context string) string {
 
     return context
 }
+func d64Function(info functionInfo, context string) string {
+    encoder := base64.StdEncoding
+    maxLen := encoder.DecodedLen(len(context))
 
+    buf := make([]byte, maxLen)
+
+    if _, err := encoder.Decode(buf, []byte(context)); err != nil {
+        log.Print("Failed to decode context")
+        return context
+    } 
+
+    return string(buf)
+}
 func mapFunction(info functionInfo, context string) string {
 
     return context
@@ -187,8 +209,13 @@ func splitFunction(info functionInfo, context string) string {
     return fields[position]
 }
 
+func processLitFunctions(plugin *Plugin, event Event) {
+    for _, function := range plugin.LitFunctions {
+        event[function.Tag] = function.Arguments[0]
+    }
+}
 
-func processMessage(message *RFC3164.Message, plugin *Plugin) (Event) {
+func processMessage(message *Messages.Message, plugin *Plugin) (Event) {
     var lines = [] string {}
 
     if plugin.LineEnd != "" {
@@ -198,11 +225,16 @@ func processMessage(message *RFC3164.Message, plugin *Plugin) (Event) {
     }
 
     var event = make(Event)
- 
+    
+    
+    /* Populate any literal Functions */
+    processLitFunctions(plugin, event)
+
     for _, line := range lines {
 
         /* Process any Position Functions first */
         processPositionFunctions(line, plugin, event)
+
 
         /* We now have split on the pair, so for "ossec: Alert Level: 3"
         We now have: Cell[0] = ossec, Cell[1] = Alert Level, Cell[2] = 3
@@ -301,6 +333,12 @@ func createFunction(funcString string) (functionInfo, error) {
             case "pos":
                 f.FuncType = PositionFunc
                 f.Function = positionFunction
+            case "d64":
+                f.FuncType = d64Func
+                f.Function = d64Function
+            case "lit":
+                f.FuncType = LitFunc
+                f.Function = litFunction
 
             default:
                 return functionInfo{}, errors.New("Invalid Function Type")
@@ -328,16 +366,15 @@ func New(fileName string) (*Plugin, error)  {
     plugin.Mapping =  map[string][]string{}
     plugin.PositionMap = map[int][]functionInfo {}
     plugin.KeyMap = map[string][]functionInfo {}
+    plugin.LitFunctions = make([]functionInfo, 0, 50)
 
-    mapping := config.GetMap("mapping")
     tags := config.GetMap("tags")
-
     if tags != nil {
         for key, value := range tags {
             for _, valueLit := range value {
                 // Grab the function used
                 if ret, err := createFunction(valueLit); err != nil {
-                    log.Print("Unable to load Line: ",  key, " ", value)
+                    log.Print("Unable to load Line: ",  key, "=", value, " ", err)
                 } else {
                     ret.Tag = key
 
@@ -352,6 +389,8 @@ func New(fileName string) (*Plugin, error)  {
                         } else {
                             log.Print("Unable to load line: ", key, " ", value)
                         }
+                    } else if ret.FuncType == LitFunc {
+                        plugin.LitFunctions = append(plugin.LitFunctions, ret )
                     } else {
                         // Otherwise we take the first argument as the key needed for the value.
                         spaces := strings.Count(ret.Arguments[0], " ") + 1
@@ -370,20 +409,6 @@ func New(fileName string) (*Plugin, error)  {
         }
     }
 
-    for key, value := range  mapping {
-        slice, ok := plugin.Mapping[value[0]]
-        if !ok {
-            slice =  make([]string, 0, 10)
-        }
-
-        spaces := strings.Count(value[0], " ") + 1
-        if spaces > plugin.MaxKey {
-            plugin.MaxKey = spaces
-        }
-
-        plugin.Mapping[value[0]] = append(slice, key)
-    }
-    
     return &plugin, nil
 }
 

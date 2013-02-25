@@ -15,6 +15,11 @@ applicataion_proto - Application Protocol (HTTP, POP, IMAP etc)
 
 event_action - Action
 event_priority
+event_id 
+event_message
+event_type
+event_taxonomy
+
 
 device_address - The Device IP  which generated the action/event
 device_hostname - The Device hostname which generated the action/event
@@ -75,10 +80,6 @@ wireless_encryption - Encryption Type
 bytes_in - The number of bytes received.
 bytes_out - The number of bytes sent.
 
-message - The event message
-message_id - The event message ID
-protocol - The protocol UDP/TCP
-
 request_url - the URL requested
 request_cookies - Cookies associated
 request_method - the request Method (GET/POST)
@@ -118,7 +119,10 @@ customfield_7  - Custom field
 customfield_8  - Custom field
 customfield_9  - Custom field
 
+date_string
+date_epoch
 
-
-
+These have been added for support for AV. Please don't use them outside of that context.
+plugin_id 
+plugin_sid
 

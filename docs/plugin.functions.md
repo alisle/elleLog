@@ -33,3 +33,17 @@ split("dst", ":", 0) will return 'a'
 split("dst", ":", 1) will return 'b'
 
 tags.destination_address=split("dst", ":", 0)
+
+### D64
+
+The d64 plugin function will decode a standard mapping which is in d64 format.
+
+tags.customfield_1 = d64("userdata1")
+
+### LIT
+
+The lit (short for literal) does no processing, it simply puts the value of the tag as the same as the value
+
+tags.customheader_1=lit("Hello People")
+
+This will set the value for tags.customheader_0 as "Hello People"

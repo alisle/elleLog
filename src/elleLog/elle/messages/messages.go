@@ -1,27 +1,12 @@
-package RFC3164 
-/* This processes lines in the RFC3164 format */
+package Messages
 
-// Imports
 import (
-	"errors"
-	"regexp"
-	"strconv"
-	"log"
-	"strings"
-	"fmt"
+    "fmt"
+    "log"
     "elleLog/elle/listener"
     "elleLog/elle/config"
 )
 
-//External Globals
-var MessagesReceived = 0
-var LifetimeMessagesReceived = 0
-var MAXTHREADS = 10
-
-//Internal Globals
-var messageRegex = regexp.MustCompile(`^<(?P<pri>\d+)>(?P<timestamp>\w{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?P<Hostname>\S+)\s(?P<message>.*)`)
-
-// Types
 type Message struct {
 	Facility Facility 
 	Severity Severity 
@@ -31,10 +16,14 @@ type Message struct {
     IP string
 }
 
+//External Globals
+var MessagesReceived = 0
+var LifetimeMessagesReceived = 0
+var MAXTHREADS = 10
 
 type Facility int64
 const (
-	KERNEL Facility  = iota
+    KERNEL Facility  = iota
 	USER
 	MAIL
 	SYSTEM
@@ -112,56 +101,42 @@ func (severity* Severity)  String() string {
 	return "Invalid";
 }
 
-func Initialize() {
-    MAXTHREADS =  Config.GlobalConfig.GetInt(Config.RFC3164_THREADS, 10)
-}
-func New(packet Listener.Packet) (*Message, error) {
-    line := packet.Message
-	if matches := messageRegex.FindStringSubmatch(line); matches != nil {
-		var facility, severity,pri int64
-		var hostname string
-		pri, _ = strconv.ParseInt(matches[1], 10, 8)
-
-		facility = pri / 8
-		severity = pri - (facility * 8) 
-		timestamp := matches[2]
-
-        hostname = strings.TrimSpace(matches[3])
-        message := matches[4]
-
-		return &Message{ Facility(facility), Severity(severity), timestamp, hostname, message, packet.Host}, nil
-	}
-
-	return &Message{}, errors.New("Message is not a valid RFC3164 packet")
-}
-
 func (message *Message) String() string {
 	return fmt.Sprintf("%s %v.%v %s %s", message.TimeStamp, message.Facility.String(), message.Severity.String(), message.Hostname,  message.Content)
 }
+func Initialize() {
+    MAXTHREADS =  Config.GlobalConfig.GetInt(Config.MESSAGE_THREADS, 10)
+}
 
 
-func StartProcessing(finish <- chan bool, lines <-chan Listener.Packet, messages chan <- *Message) {
+
+func StartProcessing(finish chan bool, lines <-chan Listener.Packet, messages chan <- *Message) {
     for x := 0; x < MAXTHREADS; x++ {
         go MakeMessages(finish, lines, messages)
     }
 }
-func MakeMessages(finish <-chan bool, lines <-chan Listener.Packet, messages chan<- *Message) {
+func MakeMessages(finish chan bool, lines <-chan Listener.Packet, messages chan<- *Message) {
 
 	for {
 		select {
 		case <- finish:
 			{
-				log.Print("RFC3164: Signalled to end, closing")
+				log.Print("Message: Signalled to end, closing")
+                finish <- true
 				return
 			}
-		case line  := <-lines:
-				newMessage, err := New(line)
-				if err  == nil { 
-					messages <- newMessage
-                    MessagesReceived++
-				} else {
-					log.Print("RFC3164:", err, " caused by ", line)
-				}
+        case line := <- lines:
+            {
+                if line.Type == Listener.RFC3164Packet {
+                    newMessage, err := newRFC3164(line)
+                    if err  == nil { 
+                        messages <- newMessage
+                        MessagesReceived++
+                    } else {
+                        log.Print("RFC3164:", err, " caused by ", line)
+                    }
+                }
+            }
 		}
 	}
 }

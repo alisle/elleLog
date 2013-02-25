@@ -155,6 +155,8 @@ func (this *Config)generate(fileName string) (error){
             continue
         }
         key := confLine[0:keyvalue]
+        key = strings.ToLower(key)
+
         value := strings.Trim(strings.TrimSpace(confLine[keyvalue + 1:]), "\"")
 
         var currentMap = this.Values

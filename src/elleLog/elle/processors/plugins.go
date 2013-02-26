@@ -170,15 +170,12 @@ func regexFunction(info functionInfo, context string) string {
     return context
 }
 func d64Function(info functionInfo, context string) string {
-    encoder := base64.StdEncoding
-    maxLen := encoder.DecodedLen(len(context))
-
-    buf := make([]byte, maxLen)
-
-    if _, err := encoder.Decode(buf, []byte(context)); err != nil {
-        log.Print("Failed to decode context")
+    buf , err := base64.StdEncoding.DecodeString(context)
+    
+    if err != nil {
+        log.Print("Failed to decode context: ", err, " from: \"", context, "\"")
         return context
-    } 
+    }
 
     return string(buf)
 }
@@ -256,7 +253,7 @@ func processMessage(message *Messages.Message, plugin *Plugin) (Event) {
         var takeField = false 
         var forMapping = ""
 
-        for _, cell := range pivots {
+        for currentPivot, cell := range pivots {
             var fields = strings.Fields(cell)
             var fieldLen = len(fields)
             var currentKey = ""
@@ -264,11 +261,19 @@ func processMessage(message *Messages.Message, plugin *Plugin) (Event) {
             
             if takeField && fieldLen > 0 {
                     word := fields[0]
-                    if strings.HasPrefix(fields[0], "\"") {
+                    if strings.HasPrefix(fields[0], "\"") && !strings.HasSuffix(fields[0], "\""){
+                        found := false
                         for x := 1; x < len(fields); x++ {
                             word = word + " " + fields[x]
                             if strings.HasSuffix(fields[x], "\"") {
-                                break
+                                found = true
+                            }
+                        }
+
+                        if !found {
+                            if currentPivot + 1 < len(pivots) {
+                                quote := strings.Index(pivots[currentPivot + 1], "\"")
+                                word = word + plugin.PairSep +  pivots[currentPivot + 1][0:quote]
                             }
                         }
                     }

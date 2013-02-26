@@ -1,12 +1,10 @@
 package Messages
 
 import (
-    "errors"
     "elleLog/elle/listener"
 )
 
 func newOSSIM(packet Listener.Packet) (*Message, error) {
-
-
-    return &Message{}, errors.New("Message is not a valid AV packet")
+    line := packet.Message
+    return &Message{ SYSLOG, Information, "", "", line, packet.Host }, nil
 }

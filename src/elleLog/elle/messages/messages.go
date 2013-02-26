@@ -127,14 +127,21 @@ func MakeMessages(finish chan bool, lines <-chan Listener.Packet, messages chan<
 			}
         case line := <- lines:
             {
+                log.Print("Got Message")
+                var newMessage *Message
+                var err error
+
                 if line.Type == Listener.RFC3164Packet {
-                    newMessage, err := newRFC3164(line)
-                    if err  == nil { 
-                        messages <- newMessage
-                        MessagesReceived++
-                    } else {
-                        log.Print("RFC3164:", err, " caused by ", line)
-                    }
+                    newMessage, err = newRFC3164(line)
+                } else {
+                    newMessage, err = newOSSIM(line)
+                }
+
+                if err  == nil { 
+                    messages <- newMessage
+                    MessagesReceived++
+                } else {
+                    log.Print("Messages:", err, " caused by ", line)
                 }
             }
 		}

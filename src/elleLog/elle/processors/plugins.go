@@ -271,9 +271,12 @@ func processMessage(message *Messages.Message, plugin *Plugin) (Event) {
                         }
 
                         if !found {
-                            if currentPivot + 1 < len(pivots) {
-                                quote := strings.Index(pivots[currentPivot + 1], "\"")
-                                word = word + plugin.PairSep +  pivots[currentPivot + 1][0:quote]
+                            /* We can't find the end, that means it's in the next pivot */
+                            for x := currentPivot + 1; x < len(pivots); x++ {
+                                quote := strings.Index(pivots[x], "\"")
+                                if quote >= 0 {
+                                    word = word + plugin.PairSep +  pivots[x][0:quote]
+                                }
                             }
                         }
                     }

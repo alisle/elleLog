@@ -5,6 +5,8 @@ import (
 	"net"
 	"log"
 	"os"
+    "regexp"
+    "bytes"
 )
 
 //External Globals
@@ -118,6 +120,7 @@ func listener(prot string, url string, finish <-chan bool, packets chan<- Packet
 }
 
 func AVListener(url string, finish <- chan bool, packets chan<- Packet) {
+    var avConnect = regexp.MustCompile(`^connect id=\"(?P<sequence>[^\"]+)\"\s+type=\"(?P<type>[^\"]+)\"\s+version=\"(?P<version>[^\"]+)\"\s+sensor_id=\"(?P<id>[^\"]+)\"`)
     listener, err := net.Listen("tcp", url)
 
     if err != nil {
@@ -131,27 +134,46 @@ func AVListener(url string, finish <- chan bool, packets chan<- Packet) {
         if err != nil {
             log.Print("Accept failed: ", err)
             continue
-        } else {
-            log.Print("Got Connection")
-        }
+        } 
 
         go func(connection net.Conn) {
-            buffer := make([]byte, 300)
+            buffer := make([]byte, 1024)
+
             bytesRead, err := connection.Read(buffer[0:])
             if err != nil {
                 return
             }
 
-            if string(buffer[0:bytesRead]) == "Hello I am a OSSIM Agent" {
-                connection.Write([]byte("HELLO\n"))
+            hello := string(buffer[0:bytesRead])
+            if matches := avConnect.FindStringSubmatch(hello); matches != nil {
+                sequence := matches[1]
+                connect_type := matches[2]
+                version := matches[3]
+                sensor_id := matches[4]
+                log.Print("New OSSIM Connection: ", connect_type, " version: ", version, " from sensor: ", sensor_id)
+                connection.Write([]byte(`ok id="` + sequence + "\"\n"))
+                buffer := make([]byte, 32000)
+                offset := 0 
                 for {
-                    buffer := make([]byte, 1024)
-                    bytesRead, err := connection.Read(buffer[0:])
+                    bytesRead, err := connection.Read(buffer[offset:])
+                    offset = offset + bytesRead
+
                     if err != nil {
+                        // Reset the buffer
+                        buffer = make([]byte, 32000)
+                        offset = 0
+
                         break;
                     } else {
-                        PacketsReceived++
-                        packets <- Packet{ AlienVaultPacket, connection.RemoteAddr().String(), string(buffer[0:bytesRead]) }
+                        if loc := bytes.Index(buffer, []byte{'\n'}); loc > 0 {
+                            PacketsReceived++
+                            packets <- Packet{ AlienVaultPacket, connection.RemoteAddr().String(), string(buffer[0:loc]) }
+
+                            newBuffer := make([]byte, 32000)
+                            copy(newBuffer, buffer[loc:])
+                            buffer = newBuffer
+                            offset = 0
+                        }
                     }
                 }
             } else {

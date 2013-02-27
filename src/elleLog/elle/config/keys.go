@@ -32,3 +32,4 @@ var SERVER_HTML_DIR = "server.http_address.html_directory"
 
 var DEFAULT_CONFIG_FILE = "etc/ellelog.cfg"
 var DEFAULT_PLUGIN_DIR = "etc/plugins/"
+

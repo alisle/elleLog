@@ -127,7 +127,6 @@ func MakeMessages(finish chan bool, lines <-chan Listener.Packet, messages chan<
 			}
         case line := <- lines:
             {
-                log.Print("Got Message")
                 var newMessage *Message
                 var err error
 
@@ -137,9 +136,12 @@ func MakeMessages(finish chan bool, lines <-chan Listener.Packet, messages chan<
                     newMessage, err = newOSSIM(line)
                 }
 
+
                 if err  == nil { 
-                    messages <- newMessage
-                    MessagesReceived++
+                    if newMessage != nil  {
+                        messages <- newMessage
+                        MessagesReceived++
+                    }
                 } else {
                     log.Print("Messages:", err, " caused by ", line)
                 }

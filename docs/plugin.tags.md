@@ -11,6 +11,7 @@ have not been settled on and are subject to expansion.
 If you have a suggestions please don't hesitate to drop an email
 
 ### Current Tags
+```
 applicataion_proto - Application Protocol (HTTP, POP, IMAP etc)
 
 event_action - Action
@@ -121,8 +122,10 @@ customfield_9  - Custom field
 
 date_string
 date_epoch
+```
 
 These have been added for support for AV. Please don't use them outside of that context.
+```
 plugin_id 
 plugin_sid
-
+```
